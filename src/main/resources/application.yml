@@ -1,0 +1,118 @@
+
+spring:
+  application:
+    name: kotlin_base
+
+  datasource:
+    write:
+      hikari:
+        driver-class-name: org.postgresql.Driver
+        jdbc-url: jdbc:postgresql://localhost:5432/networkingdb
+        username: networking
+        password: networking2@
+        read-only: false
+        minimum-idle: 1
+        maximum-pool-size: 1
+        max-lifetime: 360000 # 1 hour
+        connection-timeout: 5000
+        auto-commit: true
+        pool-name: master-pool
+    read:
+      hikari:
+        driver-class-name: org.postgresql.Driver
+        jdbc-url: jdbc:postgresql://localhost:35432/networkingdb
+        username: networking
+        password: networking2@
+        read-only: true
+        minimum-idle: 1
+        maximum-pool-size: 1
+        max-lifetime: 360000 # 1 hour
+        connection-timeout: 5000
+        auto-commit: true
+        pool-name: slave-pool
+  jpa:
+    database: postgresql
+    show-sql: true
+    hibernate:
+      type: trace
+      format_sql: true
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+#  datasource:
+#    write:
+#      hikari:
+#        driver-class-name: com.mysql.cj.jdbc.Driver
+#        jdbc-url: jdbc:mysql://localhost:13306/mh_test
+#        username: root
+#        password: "!k99co002"
+#        read-only: false
+#        minimum-idle: 2
+#        maximum-pool-size: 5
+#        max-lifetime: 360000 # 1 hour
+#        connection-timeout: 5000
+#        auto-commit: true
+#        pool-name: writable
+#    read:
+#      hikari:
+#        driver-class-name: com.mysql.cj.jdbc.Driver
+#        jdbc-url: jdbc:mysql://localhost:23306/mh_test
+#        username: root
+#        password: "!k99co002"
+#        read-only: true
+#        minimum-idle: 2
+#        maximum-pool-size: 5
+#        max-lifetime: 360000 # 1 hour
+#        connection-timeout: 5000
+#        auto-commit: true
+#        pool-name: read-only
+
+  #  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    jdbc-url: jdbc:mysql://localhost:23306/mh_test
+#    username: root
+#    password: "!k99co002"
+#    hikari:
+#      read-only: true
+#      minimum-idle: 2
+#      maximum-pool-size: 5
+#      max-lifetime: 360000 # 1 hour
+#      connection-timeout: 5000
+#      auto-commit: true
+#      pool-name: read-only
+#  jpa:
+#    database: mysql
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: none
+#      naming:
+#        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl
+#        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.MySQL8Dialect
+
+
+logging:
+  level:
+    com.test.kotlin_base: DEBUG
+    org.springframework: ERROR
+    org.springframework.web.reactive.function.client: DEBUG
+    org.springframework.transaction.interceptor: DEBUG
+    jdbc.sqltiming: DEBUG
+    jdbc.sqlonly: debug
+    com.zaxxer.hikari: DEBUG
+    org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy: TRACE
+    redis: ERROR
+    org.hibernate.type: ERROR
+    org.hibernate.SQL: ERROR
+    org.hibernate: ERROR
+    org.hibernate.type.descriptor.sql: ERROR
+    jdbc: DEBUG
+server:
+  port: 18080
