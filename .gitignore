@@ -45,3 +45,6 @@ out/
 ### buildSrc
 !buildSrc/src
 !buildSrc/build.gradle.kts
+
+### AI
+CLAUDE.md

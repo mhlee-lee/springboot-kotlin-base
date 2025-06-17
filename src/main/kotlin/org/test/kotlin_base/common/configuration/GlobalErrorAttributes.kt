@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes
 import org.springframework.core.annotation.AnnotatedElementUtils
@@ -31,6 +32,7 @@ import org.test.kotlin_base.common.utils.MessageConverter
 import java.time.LocalDateTime
 
 class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) : DefaultErrorAttributes() {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     override fun getErrorAttributes(request: ServerRequest, options: ErrorAttributeOptions): Map<String, Any> {
         val attributes = mutableMapOf<String, Any>()
@@ -63,7 +65,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     }
 
     private fun handleDefaultException(ex: DefaultException): ErrorResultResponse {
-        val httpStatus = AnnotatedElementUtils.findMergedAnnotation(this.javaClass, ResponseStatus::class.java)
+        val httpStatus = AnnotatedElementUtils.findMergedAnnotation(ex.javaClass, ResponseStatus::class.java)
             ?.code
             ?: HttpStatus.BAD_REQUEST
 
@@ -78,6 +80,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                     runCatching { MessageConverter.getMessage(code, fieldError.arguments, DEFAULT_LOCALE) }.getOrNull()
                 }?.first { it != null }
                 ?: fieldError.defaultMessage
+                ?: "Invalid value"
 
             fieldError.field to message
         }
@@ -98,11 +101,11 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         when (val rootCause = ex.cause) {
             is InvalidFormatException -> {
                 errorCode = CommonErrorCode.INVALID_FORMAT
-                errors = rootCause.path.mapNotNull { it.fieldName to it.description }
+                errors = rootCause.path.mapNotNull { it.fieldName to (it.description ?: "Invalid format")}
             }
             is MismatchedInputException -> {
                 errorCode = CommonErrorCode.MISMATCH
-                errors = rootCause.path.mapNotNull { it.fieldName to it.description }
+                errors = rootCause.path.mapNotNull { it.fieldName to (it.description ?: "Invalid format") }
             }
             is JsonParseException -> {
                 errorCode = CommonErrorCode.JSON_PARSE_ERROR
@@ -129,21 +132,19 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
 
     // Bean Validation 실패
     private fun handleConstraintViolationException(ex: ConstraintViolationException): ErrorResultResponse {
-        val errors = ex.constraintViolations.mapNotNull {
-            val targetClass = it.leafBean.javaClass
-            val property = it.propertyPath.toString()
-            val annotation = it.constraintDescriptor.annotation
-            val constraint = annotation.annotationClass.simpleName ?: "Unknown"
+        val errors = ex.constraintViolations.mapNotNull { violation ->
+            val property = violation.propertyPath.toString()
+            val constraint = violation.constraintDescriptor.annotation.annotationClass.simpleName ?: "Unknown"
+            val objectName = violation.rootBeanClass?.simpleName?.lowercase() ?: "object"
 
-            val objectName = it.rootBeanClass?.simpleName?.lowercase() ?: "object"
-            val messageCode = messageResolver.resolveMessageCodes(constraint, objectName, property, targetClass)
-                .filterNotNull().firstOrNull()
+            val messageCode = messageResolver.resolveMessageCodes(constraint, objectName, property, violation.leafBean.javaClass)
+                .firstOrNull()
 
             if (messageCode != null) {
-                val args = extractConstraintArguments(annotation)
-                MessageConverter.getMessage(messageCode, args)
+                val args = extractConstraintArguments(violation.constraintDescriptor.annotation)
+                property to MessageConverter.getMessage(messageCode, args)
             } else null
-        }
+        }.toMap()
 
         return ErrorResultResponse(
             HttpStatus.BAD_REQUEST,
@@ -156,16 +157,16 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     private fun handleInvalidMediaTypeException(ex: InvalidMediaTypeException): ErrorResultResponse {
         return ErrorResultResponse(
             HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-            CommonErrorCode.PAYLOAD_TOO_LARGE.code,
-            CommonErrorCode.PAYLOAD_TOO_LARGE.getMessage()
+            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.code,
+            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage()
         )
     }
 
     private fun handleDataBufferLimitException(ex: DataBufferLimitException): ErrorResultResponse {
         return ErrorResultResponse(
             HttpStatus.PAYLOAD_TOO_LARGE,
-            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.code,
-            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage()
+            CommonErrorCode.PAYLOAD_TOO_LARGE.code,
+            CommonErrorCode.PAYLOAD_TOO_LARGE.getMessage()
         )
     }
 
