@@ -1,12 +1,12 @@
-package org.test.kotlin_base.common.configuration
+package org.test.kotlin_base.common.config
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import org.springframework.boot.web.reactive.error.ErrorAttributes
+import org.springframework.boot.webflux.error.ErrorAttributes
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.MediaType
 import org.springframework.http.codec.ServerCodecConfigurer
-import org.springframework.http.codec.json.Jackson2JsonDecoder
-import org.springframework.http.codec.json.Jackson2JsonEncoder
+import org.springframework.http.codec.json.JacksonJsonDecoder
+import org.springframework.http.codec.json.JacksonJsonEncoder
 import org.springframework.validation.DefaultMessageCodesResolver
 import org.springframework.validation.MessageCodesResolver
 import org.springframework.validation.Validator
@@ -16,23 +16,11 @@ import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.test.kotlin_base.common.constant.CommonConstant
 import org.test.kotlin_base.common.objectMapper
 import org.test.kotlin_base.common.utils.MessageConverter
+import tools.jackson.databind.SerializationFeature
 
 @Configuration
 @EnableWebFlux
 class WebFluxConfiguration : WebFluxConfigurer {
-
-    override fun getMessageCodesResolver(): MessageCodesResolver? {
-        return messageResolver
-    }
-
-    override fun configureHttpMessageCodecs(configurer: ServerCodecConfigurer) {
-        configurer.defaultCodecs().apply {
-            jackson2JsonEncoder(jackson2JsonEncoder)
-            jackson2JsonDecoder(jackson2JsonDecoder)
-            maxInMemorySize(CommonConstant.MAX_BUFFER_SIZE)
-        }
-    }
-
     @Bean
     fun globalErrorAttributes() : ErrorAttributes {
         return GlobalErrorAttributes(messageResolver)
@@ -46,10 +34,20 @@ class WebFluxConfiguration : WebFluxConfigurer {
         return bean
     }
 
+    override fun getMessageCodesResolver(): MessageCodesResolver {
+        return messageResolver
+    }
+
+    override fun configureHttpMessageCodecs(configurer: ServerCodecConfigurer) {
+        configurer.defaultCodecs().apply {
+            jacksonJsonEncoder(JacksonJsonEncoder(configurationMapper, MediaType.APPLICATION_JSON))
+            jacksonJsonDecoder(JacksonJsonDecoder(configurationMapper, MediaType.APPLICATION_JSON))
+            maxInMemorySize(CommonConstant.MAX_BUFFER_SIZE)
+        }
+    }
+
     companion object {
-        private val configurationMapper = objectMapper.copy().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-        private val jackson2JsonEncoder = Jackson2JsonEncoder(configurationMapper)
-        private val jackson2JsonDecoder = Jackson2JsonDecoder(configurationMapper)
+        private val configurationMapper = objectMapper.rebuild().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS).build()
 
         private val messageResolver = DefaultMessageCodesResolver().apply {
             // message code 저의 형식

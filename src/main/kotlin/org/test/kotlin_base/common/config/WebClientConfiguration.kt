@@ -1,4 +1,4 @@
-package org.test.kotlin_base.common.configuration
+package org.test.kotlin_base.common.config
 
 import io.netty.channel.ChannelOption
 import io.netty.channel.epoll.EpollChannelOption
@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.http.codec.json.Jackson2JsonDecoder
-import org.springframework.http.codec.json.Jackson2JsonEncoder
+import org.springframework.http.codec.json.JacksonJsonDecoder
+import org.springframework.http.codec.json.JacksonJsonEncoder
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.test.kotlin_base.common.objectMapper
@@ -34,8 +34,8 @@ class WebClientConfiguration {
         .builder()
         .codecs { configurer ->
             configurer.defaultCodecs().apply {
-                jackson2JsonEncoder(Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON))
-                jackson2JsonDecoder(Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON))
+                jacksonJsonEncoder(JacksonJsonEncoder(objectMapper, MediaType.APPLICATION_JSON))
+                jacksonJsonDecoder(JacksonJsonDecoder(objectMapper, MediaType.APPLICATION_JSON))
                 maxInMemorySize(-1)
             }
         }.build()

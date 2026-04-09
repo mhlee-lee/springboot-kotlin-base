@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     kotlin("jvm") version PluginVersions.KOTLIN
@@ -8,7 +7,7 @@ plugins {
     kotlin("plugin.allopen") version PluginVersions.KOTLIN
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
     id("io.spring.dependency-management") version PluginVersions.SPRING_DEPENDENCY_MANAGEMENT
-    id("com.epages.restdocs-api-spec") version "0.19.4"
+//    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
 }
 
 group = "org.test"
@@ -16,7 +15,7 @@ version = "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(BuildVersions.JAVA.majorVersion.toInt())
     }
 }
 
@@ -32,62 +31,51 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-webclient")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation("tools.jackson.module:jackson-module-kotlin")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:${DependencyVersions.REACTOR_KOTLIN_EXTENSIONS}")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:${DependencyVersions.KOTLIN}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:${DependencyVersions.KOTLINX_COROUTINES_REACTOR}")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
-    runtimeOnly("com.mysql:mysql-connector-j")
-    // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    runtimeOnly("org.postgresql:postgresql:42.7.6")
-
-    // querydsl
-    implementation("com.querydsl:querydsl-jpa:${DependencyVersions.QUERYDSL}")
-    annotationProcessor("com.querydsl:querydsl-apt:${DependencyVersions.QUERYDSL}")
-    annotationProcessor("jakarta.annotation:jakarta.annotation-api:${DependencyVersions.JAKARTA_ANNOTATION_API}")
-    annotationProcessor("jakarta.persistence:jakarta.persistence-api:${DependencyVersions.JAKARTA_PERSISTENCE_API}")
-    implementation("joda-time:joda-time:${DependencyVersions.JODA_TIME}")
-
-    implementation("jakarta.validation:jakarta.validation-api:3.1.1")
-
+    testRuntimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:${DependencyVersions.KOTLIN}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${DependencyVersions.KOTLINX_COROUTINES_REACTOR}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${DependencyVersions.KOTLIN_MOCKITO}")
-    testImplementation("io.mockk:mockk:1.14.2")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
 
     testImplementation("com.epages:restdocs-api-spec-webtestclient:0.19.4")
-    testImplementation("org.springframework.restdocs:spring-restdocs-webtestclient:3.0.3")
+    testImplementation("org.springframework.restdocs:spring-restdocs-webtestclient:${DependencyVersions.SPRING_RESTDOCS_WEBTESTCLIENT}")
 }
 
 kotlin {
+    jvmToolchain(BuildVersions.JAVA.majorVersion.toInt())
     compilerOptions {
-        freeCompilerArgs.addAll("-Xjsr305=strict")
+        freeCompilerArgs.addAll(
+            "-Xjsr305=strict",
+            "-Xannotation-default-target=param-property",
+        )
+        jvmTarget = JvmTarget.fromTarget(BuildVersions.JAVA.majorVersion)
     }
 }
 
-fun kotlinCompilerOptions(): KotlinJvmCompile.() -> Unit = {
-    compilerOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = JvmTarget.JVM_21
-    }
-}
-
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-openapi3 {
-    setServer("http://localhost:8080")
-    title = "My API"
-    description = "My API description"
-    version = "0.1.0"
-    format = "yaml"
-}
+//openapi3 {
+//    setServer("http://localhost:8080")
+//    title = "My API"
+//    description = "My API description"
+//    version = "0.1.0"
+//    format = "yaml"
+//}

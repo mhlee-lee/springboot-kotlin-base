@@ -1,19 +1,11 @@
-package org.test.kotlin_base.common.configuration
+package org.test.kotlin_base.common.config
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.exc.InvalidFormatException
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import jakarta.validation.ConstraintViolationException
-import jakarta.validation.constraints.DecimalMax
-import jakarta.validation.constraints.DecimalMin
-import jakarta.validation.constraints.Max
-import jakarta.validation.constraints.Min
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Size
+import jakarta.validation.constraints.*
 import org.slf4j.LoggerFactory
+import org.springframework.boot.json.JsonParseException
 import org.springframework.boot.web.error.ErrorAttributeOptions
-import org.springframework.boot.web.reactive.error.DefaultErrorAttributes
+import org.springframework.boot.webflux.error.DefaultErrorAttributes
 import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.core.io.buffer.DataBufferLimitException
 import org.springframework.http.HttpStatus
@@ -29,6 +21,8 @@ import org.test.kotlin_base.common.errors.CommonErrorCode
 import org.test.kotlin_base.common.errors.ErrorCode
 import org.test.kotlin_base.common.exception.DefaultException
 import org.test.kotlin_base.common.utils.MessageConverter
+import tools.jackson.databind.exc.InvalidFormatException
+import tools.jackson.databind.exc.MismatchedInputException
 import java.time.LocalDateTime
 
 class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) : DefaultErrorAttributes() {
@@ -51,7 +45,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     }
 
     // 순서 중요
-    private fun getErrorResult(error: Throwable): ErrorResultResponse {
+    private fun getErrorResult(error: Throwable): ErrorResponse {
         return when (error) {
             is DefaultException -> handleDefaultException(error)
             is WebExchangeBindException -> handleWebExchangeBindException(error)
@@ -64,16 +58,16 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         }
     }
 
-    private fun handleDefaultException(ex: DefaultException): ErrorResultResponse {
+    private fun handleDefaultException(ex: DefaultException): ErrorResponse {
         val httpStatus = AnnotatedElementUtils.findMergedAnnotation(ex.javaClass, ResponseStatus::class.java)
             ?.code
             ?: HttpStatus.BAD_REQUEST
 
-        return ErrorResultResponse(httpStatus, ex.errorCode.code, ex.message, ex.details.takeIf { ex.details.isNotEmpty() })
+        return ErrorResponse(httpStatus, ex.errorCode.code, ex.message, ex.details.takeIf { ex.details.isNotEmpty() })
     }
 
     // Spring Web Validation 관련 처리
-    private fun handleWebExchangeBindException(ex: WebExchangeBindException): ErrorResultResponse {
+    private fun handleWebExchangeBindException(ex: WebExchangeBindException): ErrorResponse {
         val validationMessageResults = ex.bindingResult.fieldErrors.associate { fieldError ->
             val message = fieldError.codes
                 ?.map { code ->
@@ -85,7 +79,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             fieldError.field to message
         }
 
-        return ErrorResultResponse(
+        return ErrorResponse(
             HttpStatus.BAD_REQUEST,
             CommonErrorCode.INVALID_PARAMETER.code,
             CommonErrorCode.INVALID_PARAMETER.getMessage(),
@@ -93,7 +87,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         )
     }
 
-    private fun handleServerWebInputException(ex: ServerWebInputException): ErrorResultResponse {
+    private fun handleServerWebInputException(ex: ServerWebInputException): ErrorResponse {
         val httpStatus = HttpStatus.BAD_REQUEST
         var errorCode: ErrorCode
         var errors: Any? = null
@@ -101,29 +95,25 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         when (val rootCause = ex.cause) {
             is InvalidFormatException -> {
                 errorCode = CommonErrorCode.INVALID_FORMAT
-                errors = rootCause.path.mapNotNull { it.fieldName to (it.description ?: "Invalid format")}
+                errors = rootCause.path.mapNotNull { it.propertyName to (it.description ?: "Invalid format") }
             }
             is MismatchedInputException -> {
                 errorCode = CommonErrorCode.MISMATCH
-                errors = rootCause.path.mapNotNull { it.fieldName to (it.description ?: "Invalid format") }
+                errors = rootCause.path.mapNotNull { it.propertyName to (it.description ?: "Invalid format") }
             }
             is JsonParseException -> {
                 errorCode = CommonErrorCode.JSON_PARSE_ERROR
-            }
-            is JsonMappingException -> {
-                errorCode = CommonErrorCode.JSON_PARSE_ERROR
-                errors = rootCause.path.mapNotNull { it.fieldName }
             }
             else -> {
                 errorCode = CommonErrorCode.BAD_REQUEST
             }
         }
 
-        return ErrorResultResponse(httpStatus, errorCode.code, errorCode.getMessage(), errors)
+        return ErrorResponse(httpStatus, errorCode.code, errorCode.getMessage(), errors)
     }
 
-    private fun handleResponseStatusException(ex: ResponseStatusException): ErrorResultResponse {
-        return ErrorResultResponse(
+    private fun handleResponseStatusException(ex: ResponseStatusException): ErrorResponse {
+        return ErrorResponse(
             ex.statusCode as HttpStatus,
             code = CommonErrorCode.BAD_REQUEST.code,
             message = CommonErrorCode.BAD_REQUEST.getMessage()
@@ -131,7 +121,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     }
 
     // Bean Validation 실패
-    private fun handleConstraintViolationException(ex: ConstraintViolationException): ErrorResultResponse {
+    private fun handleConstraintViolationException(ex: ConstraintViolationException): ErrorResponse {
         val errors = ex.constraintViolations.mapNotNull { violation ->
             val property = violation.propertyPath.toString()
             val constraint = violation.constraintDescriptor.annotation.annotationClass.simpleName ?: "Unknown"
@@ -146,7 +136,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             } else null
         }.toMap()
 
-        return ErrorResultResponse(
+        return ErrorResponse(
             HttpStatus.BAD_REQUEST,
             CommonErrorCode.VALIDATION_FAIL.code,
             CommonErrorCode.VALIDATION_FAIL.getMessage(),
@@ -154,23 +144,23 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         )
     }
 
-    private fun handleInvalidMediaTypeException(ex: InvalidMediaTypeException): ErrorResultResponse {
-        return ErrorResultResponse(
+    private fun handleInvalidMediaTypeException(ex: InvalidMediaTypeException): ErrorResponse {
+        return ErrorResponse(
             HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.code,
             CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage()
         )
     }
 
-    private fun handleDataBufferLimitException(ex: DataBufferLimitException): ErrorResultResponse {
-        return ErrorResultResponse(
+    private fun handleDataBufferLimitException(ex: DataBufferLimitException): ErrorResponse {
+        return ErrorResponse(
             HttpStatus.PAYLOAD_TOO_LARGE,
             CommonErrorCode.PAYLOAD_TOO_LARGE.code,
             CommonErrorCode.PAYLOAD_TOO_LARGE.getMessage()
         )
     }
 
-    private fun handleUnknownException() = ErrorResultResponse(
+    private fun handleUnknownException() = ErrorResponse(
         HttpStatus.INTERNAL_SERVER_ERROR,
         code = CommonErrorCode.INTERNAL_SERVER_ERROR.code,
         message = CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage()
@@ -189,7 +179,18 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         }
     }
 
-    private class ErrorResultResponse(
+    private fun getThrowableSet(throwable: Throwable): Set<Throwable> {
+        var current = throwable
+        val throwableSet = mutableSetOf<Throwable>().apply { add(current) }
+        while (current.cause != null && current.cause != current) {
+            current = current.cause!!
+            throwableSet.add(current)
+        }
+
+        return throwableSet
+    }
+
+    private class ErrorResponse(
         val status: HttpStatus,
         val code: String,
         val message: String = "",

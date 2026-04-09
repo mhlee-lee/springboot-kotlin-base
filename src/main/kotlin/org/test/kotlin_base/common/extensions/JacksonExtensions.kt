@@ -1,6 +1,6 @@
 package org.test.kotlin_base.common.extensions
 
-import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import tools.jackson.module.kotlin.jacksonTypeRef
 import org.test.kotlin_base.common.objectMapper
 
 fun Any?.toJsonOrNull(): String? = try {

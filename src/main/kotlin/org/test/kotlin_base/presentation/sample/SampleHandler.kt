@@ -10,7 +10,6 @@ import org.springframework.web.reactive.function.server.buildAndAwait
 import org.springframework.web.reactive.function.server.pathVariableOrNull
 import org.springframework.web.reactive.function.server.queryParamOrNull
 import org.test.kotlin_base.common.TransactionExecutor
-import org.test.kotlin_base.common.extensions.header
 import org.test.kotlin_base.common.extensions.toJson
 import org.test.kotlin_base.domain.addressScope.AddressScopeRepository
 import org.test.kotlin_base.domain.sample.SampleRepository
@@ -56,7 +55,7 @@ class SampleHandler(
     }
 
     suspend fun putSample(request: ServerRequest): ServerResponse {
-        val age = request.header("age")?.toIntOrNull() ?: throw InvalidParameterException("age")
+        val age = request.headers().firstHeader("age")?.toIntOrNull() ?: throw InvalidParameterException("age")
         val name = request.queryParamOrNull("name") ?: throw InvalidParameterException("name")
         val gender: Gender = Gender.valueOf(request.pathVariableOrNull("gender") ?: throw InvalidParameterException("gender"))
         val requestBody = request.awaitBodyOrNull<SampleRequest>() ?: throw RuntimeException("body error")

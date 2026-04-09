@@ -4,9 +4,10 @@ import org.test.kotlin_base.common.errors.ErrorCode
 
 abstract class DefaultException(
     val errorCode: ErrorCode,
-    val args: Array<Any>? = null,
+    val messageArguments: Array<Any> = emptyArray(),
     val details: Map<Any, Any> = emptyMap(),
-) : RuntimeException() {
+    cause: Throwable? = null,
+) : RuntimeException(errorCode.getMessage(messageArguments), cause) {
     override val message: String
-        get() = errorCode.getMessage()
+        get() = super.message ?: ""
 }
