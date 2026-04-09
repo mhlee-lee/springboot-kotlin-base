@@ -3,8 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     kotlin("jvm") version PluginVersions.KOTLIN
     kotlin("plugin.spring") version PluginVersions.KOTLIN
-    kotlin("plugin.jpa")  version PluginVersions.KOTLIN
-    kotlin("plugin.allopen") version PluginVersions.KOTLIN
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
     id("io.spring.dependency-management") version PluginVersions.SPRING_DEPENDENCY_MANAGEMENT
 //    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
@@ -31,11 +29,11 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-webclient")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
+    runtimeOnly("io.r2dbc:r2dbc-h2")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
@@ -47,14 +45,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
-    testRuntimeOnly("com.h2database:h2")
-
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
-
-    testImplementation("com.epages:restdocs-api-spec-webtestclient:0.19.4")
-    testImplementation("org.springframework.restdocs:spring-restdocs-webtestclient:${DependencyVersions.SPRING_RESTDOCS_WEBTESTCLIENT}")
 }
 
 kotlin {

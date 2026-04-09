@@ -11,6 +11,7 @@ import org.springframework.validation.DefaultMessageCodesResolver
 import org.springframework.validation.MessageCodesResolver
 import org.springframework.validation.Validator
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
+import org.springframework.web.reactive.config.ApiVersionConfigurer
 import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.test.kotlin_base.common.constant.CommonConstant
@@ -36,6 +37,12 @@ class WebFluxConfiguration : WebFluxConfigurer {
 
     override fun getMessageCodesResolver(): MessageCodesResolver {
         return messageResolver
+    }
+
+    override fun configureApiVersioning(configurer: ApiVersionConfigurer) {
+        configurer
+            .usePathSegment(1)
+            .setVersionRequired(true)
     }
 
     override fun configureHttpMessageCodecs(configurer: ServerCodecConfigurer) {

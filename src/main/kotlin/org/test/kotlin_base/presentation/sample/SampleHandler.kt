@@ -1,14 +1,9 @@
 package org.test.kotlin_base.presentation.sample
 
+import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.awaitBodyOrNull
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
-import org.springframework.web.reactive.function.server.buildAndAwait
-import org.springframework.web.reactive.function.server.pathVariableOrNull
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import org.springframework.web.reactive.function.server.*
 import org.test.kotlin_base.common.TransactionExecutor
 import org.test.kotlin_base.common.extensions.toJson
 import org.test.kotlin_base.domain.addressScope.AddressScopeRepository
@@ -28,10 +23,10 @@ class SampleHandler(
 
     suspend fun getSample(request: ServerRequest): ServerResponse {
         val value1 = transactionExecutor.execute {
-            sampleRepository.findAll()
+            sampleRepository.findAll().toList()
         }
         val value2 = transactionExecutor.executeReadonly {
-            sampleRepository.findAll()
+            sampleRepository.findAll().toList()
         }
 
         log.info("value1: ${value1.toJson()}")
@@ -42,10 +37,10 @@ class SampleHandler(
 
     suspend fun addressScope(request: ServerRequest): ServerResponse {
         val value1 = transactionExecutor.execute {
-            addressScopeRepository.findAll()
+            addressScopeRepository.findAll().toList()
         }
         val value2 = transactionExecutor.executeReadonly {
-            addressScopeRepository.findAll()
+            addressScopeRepository.findAll().toList()
         }
 
         log.info("value1: ${value1.toJson()}")
