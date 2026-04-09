@@ -74,8 +74,14 @@ class ApplicationHttpIntegrationTests {
             .bodyValue("""{"id":"sample-1","ttl":60}""")
             .exchange()
             .expectStatus().isBadRequest
+            .expectHeader().exists("X-Trace-Id")
             .expectBody()
             .jsonPath("$.code").isEqualTo("CEC0010")
+            .jsonPath("$.path").isEqualTo("/sample/1.0/sample/FEMALE")
+            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors[0].source").isEqualTo("header")
+            .jsonPath("$.errors[0].field").isEqualTo("age")
+            .jsonPath("$.errors[0].reason").isEqualTo("required")
     }
 
     @Test
@@ -89,6 +95,10 @@ class ApplicationHttpIntegrationTests {
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo("CEC0010")
+            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors[0].source").isEqualTo("header")
+            .jsonPath("$.errors[0].field").isEqualTo("age")
+            .jsonPath("$.errors[0].reason").isEqualTo("invalid_value")
     }
 
     @Test
@@ -101,6 +111,10 @@ class ApplicationHttpIntegrationTests {
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo("CEC0012")
+            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors[0].source").isEqualTo("body")
+            .jsonPath("$.errors[0].field").isEqualTo("body")
+            .jsonPath("$.errors[0].reason").isEqualTo("required")
     }
 
     @Test
@@ -114,6 +128,30 @@ class ApplicationHttpIntegrationTests {
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo("CEC0013")
+            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors[0].source").isEqualTo("path")
+            .jsonPath("$.errors[0].field").isEqualTo("gender")
+            .jsonPath("$.errors[0].reason").isEqualTo("invalid_enum")
+    }
+
+    @Test
+    fun `sample put endpoint returns validation field errors when body is invalid`() {
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
+            .header("age", "29")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"id":"","ttl":0}""")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0011")
+            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors[0].source").isEqualTo("body")
+            .jsonPath("$.errors[0].field").isEqualTo("id")
+            .jsonPath("$.errors[0].reason").isEqualTo("not_blank")
+            .jsonPath("$.errors[1].source").isEqualTo("body")
+            .jsonPath("$.errors[1].field").isEqualTo("ttl")
+            .jsonPath("$.errors[1].reason").isEqualTo("positive")
     }
 
     @Test
@@ -130,7 +168,39 @@ class ApplicationHttpIntegrationTests {
             .uri("/unknown")
             .exchange()
             .expectStatus().isNotFound
+            .expectHeader().exists("X-Trace-Id")
             .expectBody()
             .jsonPath("$.code").isEqualTo("CEC0005")
+            .jsonPath("$.path").isEqualTo("/unknown")
+            .jsonPath("$.traceId").exists()
+    }
+
+    @Test
+    fun `provided trace id is reused in response header and body`() {
+        val traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+        webTestClient.get()
+            .uri("/unknown")
+            .header("X-Trace-Id", traceId)
+            .exchange()
+            .expectStatus().isNotFound
+            .expectHeader().valueEquals("X-Trace-Id", traceId)
+            .expectBody()
+            .jsonPath("$.traceId").isEqualTo(traceId)
+    }
+
+    @Test
+    fun `traceparent trace id is reused when custom header is absent`() {
+        val traceId = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        val traceParent = "00-$traceId-cccccccccccccccc-01"
+
+        webTestClient.get()
+            .uri("/unknown")
+            .header("traceparent", traceParent)
+            .exchange()
+            .expectStatus().isNotFound
+            .expectHeader().valueEquals("X-Trace-Id", traceId)
+            .expectBody()
+            .jsonPath("$.traceId").isEqualTo(traceId)
     }
 }

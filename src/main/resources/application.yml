@@ -38,10 +38,11 @@ app:
         validation-query: SELECT 1
 
 logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId:-}]"
   level:
     org.test.kotlin_base: DEBUG
     org.springframework: ERROR
     org.springframework.r2dbc: INFO
     org.springframework.web.reactive.function.client: DEBUG
     org.springframework.transaction: DEBUG
-

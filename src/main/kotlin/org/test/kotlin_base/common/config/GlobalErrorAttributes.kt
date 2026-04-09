@@ -2,7 +2,6 @@ package org.test.kotlin_base.common.config
 
 import jakarta.validation.ConstraintViolationException
 import jakarta.validation.constraints.*
-import org.slf4j.LoggerFactory
 import org.springframework.boot.json.JsonParseException
 import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.webflux.error.DefaultErrorAttributes
@@ -17,65 +16,87 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebInputException
 import org.test.kotlin_base.common.constant.CommonConstant.DEFAULT_LOCALE
-import org.test.kotlin_base.common.errors.CommonErrorCode
-import org.test.kotlin_base.common.errors.ErrorCode
+import org.test.kotlin_base.common.errors.*
 import org.test.kotlin_base.common.exception.DefaultException
+import org.test.kotlin_base.common.exception.RequestValidationException
 import org.test.kotlin_base.common.utils.MessageConverter
 import tools.jackson.databind.exc.InvalidFormatException
 import tools.jackson.databind.exc.MismatchedInputException
-import java.time.LocalDateTime
 import java.util.*
 
 class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) : DefaultErrorAttributes() {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     override fun getErrorAttributes(request: ServerRequest, options: ErrorAttributeOptions): Map<String, Any> {
-        val attributes = mutableMapOf<String, Any>()
-
         val error = getError(request)
         val locale = request.exchange().localeContext.locale ?: DEFAULT_LOCALE
-        val errorResult = getErrorResult(error, locale)
+        val errorResult = getErrorResult(error, request, locale)
 
-        attributes["timestamp"] = LocalDateTime.now()
-        attributes["path"] = "${request.method()} ${request.path()}"
-        attributes["status"] = errorResult.status.value()
-        attributes["code"] = errorResult.code
-        attributes["message"] = errorResult.message
-        errorResult.errors?.let { attributes["errors"] = it }
-
-        return attributes
-    }
-
-    // 순서 중요
-    private fun getErrorResult(error: Throwable, locale: Locale): ErrorResponse {
-        return when (error) {
-            is DefaultException -> handleDefaultException(error, locale)
-            is WebExchangeBindException -> handleWebExchangeBindException(error, locale)
-            is ConstraintViolationException -> handleConstraintViolationException(error, locale)
-            is ServerWebInputException -> handleServerWebInputException(error, locale)
-            is InvalidMediaTypeException -> handleInvalidMediaTypeException(locale)
-            is DataBufferLimitException -> handleDataBufferLimitException(locale)
-            is ResponseStatusException -> handleResponseStatusException(error, locale)
-            else -> handleUnknownException(locale)
+        return linkedMapOf<String, Any>(
+            "status" to errorResult.status,
+            "code" to errorResult.code,
+            "message" to errorResult.message,
+            "path" to errorResult.path,
+            "traceId" to (errorResult.traceId ?: ""),
+        ).apply {
+            errorResult.errors
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { put("errors", it) }
         }
     }
 
-    private fun handleDefaultException(ex: DefaultException, locale: Locale): ErrorResponse {
+    // 순서 중요
+    private fun getErrorResult(error: Throwable, request: ServerRequest, locale: Locale): ApiErrorResponse {
+        return when (error) {
+            is RequestValidationException -> handleRequestValidationException(error, request, locale)
+            is DefaultException -> handleDefaultException(error, request, locale)
+            is WebExchangeBindException -> handleWebExchangeBindException(error, request, locale)
+            is ConstraintViolationException -> handleConstraintViolationException(error, request, locale)
+            is ServerWebInputException -> handleServerWebInputException(error, request, locale)
+            is InvalidMediaTypeException -> handleInvalidMediaTypeException(request, locale)
+            is DataBufferLimitException -> handleDataBufferLimitException(request, locale)
+            is ResponseStatusException -> handleResponseStatusException(error, request, locale)
+            else -> handleUnknownException(request, locale)
+        }
+    }
+
+    private fun handleRequestValidationException(
+        ex: RequestValidationException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
+        return errorResponse(
+            status = ex.status,
+            errorCode = ex.errorCode,
+            request = request,
+            locale = locale,
+            errors = ex.fieldErrors,
+        )
+    }
+
+    private fun handleDefaultException(
+        ex: DefaultException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
         val httpStatus = AnnotatedElementUtils.findMergedAnnotation(ex.javaClass, ResponseStatus::class.java)
             ?.code
             ?: HttpStatus.BAD_REQUEST
 
-        return ErrorResponse(
-            httpStatus,
-            ex.errorCode.code,
-            ex.errorCode.getMessage(ex.messageArguments, locale),
-            ex.details.takeIf { ex.details.isNotEmpty() }
+        return errorResponse(
+            status = httpStatus,
+            errorCode = ex.errorCode,
+            request = request,
+            locale = locale,
+            message = ex.errorCode.getMessage(ex.messageArguments, locale),
         )
     }
 
     // Spring Web Validation 관련 처리
-    private fun handleWebExchangeBindException(ex: WebExchangeBindException, locale: Locale): ErrorResponse {
-        val validationMessageResults = ex.bindingResult.fieldErrors.associate { fieldError ->
+    private fun handleWebExchangeBindException(
+        ex: WebExchangeBindException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
+        val validationErrors = ex.bindingResult.fieldErrors.map { fieldError ->
             val message = fieldError.codes
                 ?.firstNotNullOfOrNull { code ->
                     MessageConverter.getMessageOrNull(code, fieldError.arguments, locale)
@@ -83,47 +104,91 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                 ?: fieldError.defaultMessage
                 ?: "Invalid value"
 
-            fieldError.field to message
+            ApiFieldError(
+                source = ErrorSource.BODY.wireName,
+                field = fieldError.field,
+                reason = normalizeReason(fieldError.code),
+                message = message,
+            )
         }
 
-        return ErrorResponse(
-            HttpStatus.BAD_REQUEST,
-            CommonErrorCode.INVALID_PARAMETER.code,
-            CommonErrorCode.INVALID_PARAMETER.getMessage(locale = locale),
-            validationMessageResults
+        return errorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            errorCode = CommonErrorCode.VALIDATION_FAIL,
+            request = request,
+            locale = locale,
+            errors = validationErrors,
         )
     }
 
-    private fun handleServerWebInputException(ex: ServerWebInputException, locale: Locale): ErrorResponse {
+    private fun handleServerWebInputException(
+        ex: ServerWebInputException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
         val httpStatus = HttpStatus.BAD_REQUEST
-        var errorCode: ErrorCode
-        var errors: Any? = null
+        val errorCode: ErrorCode
+        val errors: List<ApiFieldError>?
 
         when (val rootCause = ex.cause) {
             is InvalidFormatException -> {
                 errorCode = CommonErrorCode.INVALID_FORMAT
-                errors = rootCause.path.associate { reference ->
-                    reference.propertyName to (reference.description ?: "Invalid format")
-                }
+                errors = listOf(
+                    ApiFieldError(
+                        source = ErrorSource.BODY.wireName,
+                        field = rootCause.path.joinToString(".") { reference ->
+                            reference.propertyName ?: if (reference.index >= 0) "[${reference.index}]" else ""
+                        }.ifBlank { "body" },
+                        reason = "invalid_format",
+                        message = rootCause.originalMessage
+                            ?: CommonErrorCode.INVALID_FORMAT.getMessage(locale = locale),
+                    )
+                )
             }
             is MismatchedInputException -> {
                 errorCode = CommonErrorCode.MISMATCH
-                errors = rootCause.path.associate { reference ->
-                    reference.propertyName to (reference.description ?: "Invalid format")
-                }
+                errors = listOf(
+                    ApiFieldError(
+                        source = ErrorSource.BODY.wireName,
+                        field = rootCause.path.joinToString(".") { reference ->
+                            reference.propertyName ?: if (reference.index >= 0) "[${reference.index}]" else ""
+                        }.ifBlank { "body" },
+                        reason = "mismatch",
+                        message = rootCause.originalMessage ?: CommonErrorCode.MISMATCH.getMessage(locale = locale),
+                    )
+                )
             }
             is JsonParseException -> {
                 errorCode = CommonErrorCode.JSON_PARSE_ERROR
+                errors = listOf(
+                    ApiFieldError(
+                        source = ErrorSource.BODY.wireName,
+                        field = "body",
+                        reason = "json_parse",
+                        message = CommonErrorCode.JSON_PARSE_ERROR.getMessage(locale = locale),
+                    )
+                )
             }
             else -> {
                 errorCode = CommonErrorCode.BAD_REQUEST
+                errors = null
             }
         }
 
-        return ErrorResponse(httpStatus, errorCode.code, errorCode.getMessage(locale = locale), errors)
+        return errorResponse(
+            status = httpStatus,
+            errorCode = errorCode,
+            request = request,
+            locale = locale,
+            errors = errors,
+        )
     }
 
-    private fun handleResponseStatusException(ex: ResponseStatusException, locale: Locale): ErrorResponse {
+    private fun handleResponseStatusException(
+        ex: ResponseStatusException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
         val status = HttpStatus.resolve(ex.statusCode.value()) ?: HttpStatus.INTERNAL_SERVER_ERROR
         val errorCode = when (status) {
             HttpStatus.BAD_REQUEST -> CommonErrorCode.BAD_REQUEST
@@ -136,17 +201,22 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             else -> CommonErrorCode.INTERNAL_SERVER_ERROR
         }
 
-        return ErrorResponse(
-            status,
-            code = errorCode.code,
-            message = errorCode.getMessage(locale = locale)
+        return errorResponse(
+            status = status,
+            errorCode = errorCode,
+            request = request,
+            locale = locale,
         )
     }
 
     // Bean Validation 실패
-    private fun handleConstraintViolationException(ex: ConstraintViolationException, locale: Locale): ErrorResponse {
+    private fun handleConstraintViolationException(
+        ex: ConstraintViolationException,
+        request: ServerRequest,
+        locale: Locale,
+    ): ApiErrorResponse {
         val errors = ex.constraintViolations.mapNotNull { violation ->
-            val property = violation.propertyPath.toString()
+            val property = extractLeafFieldName(violation.propertyPath.toString())
             val constraint = violation.constraintDescriptor.annotation.annotationClass.simpleName ?: "Unknown"
             val objectName = violation.rootBeanClass?.simpleName?.lowercase() ?: "object"
 
@@ -155,44 +225,74 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
 
             if (messageCode != null) {
                 val args = extractConstraintArguments(violation.constraintDescriptor.annotation)
-                property to MessageConverter.getMessage(
-                    code = messageCode,
-                    args = args,
-                    locale = locale,
-                    defaultMessage = violation.message ?: property,
+                ApiFieldError(
+                    source = ErrorSource.BODY.wireName,
+                    field = property,
+                    reason = normalizeReason(constraint),
+                    message = MessageConverter.getMessage(
+                        code = messageCode,
+                        args = args,
+                        locale = locale,
+                        defaultMessage = violation.message ?: property,
+                    ),
                 )
             } else null
-        }.toMap()
+        }.sortedBy { it.field }
 
-        return ErrorResponse(
-            HttpStatus.BAD_REQUEST,
-            CommonErrorCode.VALIDATION_FAIL.code,
-            CommonErrorCode.VALIDATION_FAIL.getMessage(locale = locale),
-            errors
+        return errorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            errorCode = CommonErrorCode.VALIDATION_FAIL,
+            request = request,
+            locale = locale,
+            errors = errors,
         )
     }
 
-    private fun handleInvalidMediaTypeException(locale: Locale): ErrorResponse {
-        return ErrorResponse(
-            HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.code,
-            CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage(locale = locale)
+    private fun handleInvalidMediaTypeException(request: ServerRequest, locale: Locale): ApiErrorResponse {
+        return errorResponse(
+            status = HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+            errorCode = CommonErrorCode.UNSUPPORTED_MEDIA_TYPE,
+            request = request,
+            locale = locale,
         )
     }
 
-    private fun handleDataBufferLimitException(locale: Locale): ErrorResponse {
-        return ErrorResponse(
-            HttpStatus.PAYLOAD_TOO_LARGE,
-            CommonErrorCode.PAYLOAD_TOO_LARGE.code,
-            CommonErrorCode.PAYLOAD_TOO_LARGE.getMessage(locale = locale)
+    private fun handleDataBufferLimitException(request: ServerRequest, locale: Locale): ApiErrorResponse {
+        return errorResponse(
+            status = HttpStatus.PAYLOAD_TOO_LARGE,
+            errorCode = CommonErrorCode.PAYLOAD_TOO_LARGE,
+            request = request,
+            locale = locale,
         )
     }
 
-    private fun handleUnknownException(locale: Locale) = ErrorResponse(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        code = CommonErrorCode.INTERNAL_SERVER_ERROR.code,
-        message = CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage(locale = locale)
-    )
+    private fun handleUnknownException(request: ServerRequest, locale: Locale): ApiErrorResponse {
+        return errorResponse(
+            status = HttpStatus.INTERNAL_SERVER_ERROR,
+            errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR,
+            request = request,
+            locale = locale,
+        )
+    }
+
+    private fun errorResponse(
+        status: HttpStatus,
+        errorCode: ErrorCode,
+        request: ServerRequest,
+        locale: Locale,
+        message: String = errorCode.getMessage(locale = locale),
+        errors: List<ApiFieldError>? = null,
+    ): ApiErrorResponse {
+        return ApiErrorResponse(
+            status = status.value(),
+            code = errorCode.code,
+            message = message,
+            path = request.path(),
+            traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
+                ?: request.exchange().request.id,
+            errors = errors,
+        )
+    }
 
     // validation 어노테이션에서 속성값 추출
     private fun extractConstraintArguments(annotation: Annotation): Array<Any> {
@@ -207,10 +307,26 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         }
     }
 
-    private class ErrorResponse(
-        val status: HttpStatus,
-        val code: String,
-        val message: String = "",
-        val errors: Any? = null
-    )
+    private fun normalizeReason(raw: String?): String {
+        return when (raw) {
+            null -> "invalid"
+            "NotBlank" -> "not_blank"
+            "NotNull" -> "not_null"
+            "Positive" -> "positive"
+            "PositiveOrZero" -> "positive_or_zero"
+            "Size" -> "size"
+            "Min" -> "min"
+            "Max" -> "max"
+            "Pattern" -> "pattern"
+            "Email" -> "email"
+            else -> raw
+                .replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
+                .lowercase()
+        }
+    }
+
+    private fun extractLeafFieldName(propertyPath: String): String {
+        return propertyPath.substringAfterLast('.').ifBlank { propertyPath }
+    }
+
 }
