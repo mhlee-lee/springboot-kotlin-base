@@ -1,9 +1,14 @@
 package org.test.kotlin_base.infrastructure.database.configuration
 
-import io.r2dbc.spi.ConnectionFactories
+import io.r2dbc.pool.ConnectionPool
+import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.ConnectionFactory
+import io.r2dbc.spi.Option
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.r2dbc.ConnectionFactoryBuilder
+import org.springframework.boot.r2dbc.autoconfigure.R2dbcProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -28,16 +33,6 @@ object DatabaseRouteContext {
     const val KEY = "databaseRoute"
 }
 
-@ConfigurationProperties(prefix = "app.r2dbc")
-data class RoutingR2dbcProperties(
-    var write: Connection = Connection(),
-    var read: Connection = Connection(),
-) {
-    data class Connection(
-        var url: String = "",
-    )
-}
-
 private class RoutingConnectionFactory(
     writeConnectionFactory: ConnectionFactory,
     readConnectionFactory: ConnectionFactory,
@@ -56,7 +51,7 @@ private class RoutingConnectionFactory(
     override fun determineCurrentLookupKey(): Mono<Any> {
         return Mono.deferContextual { context ->
             val route = if (context.hasKey(DatabaseRouteContext.KEY)) {
-                context.get<DatabaseRoute>(DatabaseRouteContext.KEY)
+                context.get(DatabaseRouteContext.KEY)
             } else {
                 DatabaseRoute.WRITE
             }
@@ -67,16 +62,29 @@ private class RoutingConnectionFactory(
 
 @Configuration
 @EnableR2dbcRepositories(basePackages = ["org.test.kotlin_base.domain"])
-@EnableConfigurationProperties(RoutingR2dbcProperties::class)
 class DataSourceConfig {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @Bean("writeR2dbcProperties")
+    @ConfigurationProperties(prefix = "app.r2dbc.write")
+    fun writeR2dbcProperties(): R2dbcProperties = R2dbcProperties()
+
+    @Bean("readR2dbcProperties")
+    @ConfigurationProperties(prefix = "app.r2dbc.read")
+    fun readR2dbcProperties(): R2dbcProperties = R2dbcProperties()
+
     @Bean("writeConnectionFactory")
-    fun writeConnectionFactory(properties: RoutingR2dbcProperties): ConnectionFactory {
-        return ConnectionFactories.get(properties.write.url)
+    fun writeConnectionFactory(
+        @Qualifier("writeR2dbcProperties") properties: R2dbcProperties,
+    ): ConnectionFactory {
+        return createConnectionFactory("write", properties)
     }
 
     @Bean("readConnectionFactory")
-    fun readConnectionFactory(properties: RoutingR2dbcProperties): ConnectionFactory {
-        return ConnectionFactories.get(properties.read.url)
+    fun readConnectionFactory(
+        @Qualifier("readR2dbcProperties") properties: R2dbcProperties,
+    ): ConnectionFactory {
+        return createConnectionFactory("read", properties)
     }
 
     @Bean
@@ -129,5 +137,84 @@ class DataSourceConfig {
         return DefaultTransactionDefinition().apply {
             isReadOnly = readOnly
         }
+    }
+
+    private fun createConnectionFactory(label: String, properties: R2dbcProperties): ConnectionFactory {
+        val target = createTargetConnectionFactory(properties)
+        if (!properties.pool.isEnabled) {
+            return target
+        }
+
+        val pool = createPooledConnectionFactory(label, target, properties)
+        warmupPool(label, pool, properties)
+        return pool
+    }
+
+    private fun createTargetConnectionFactory(properties: R2dbcProperties): ConnectionFactory {
+        val url = requireNotNull(properties.url) { "R2DBC url must be configured" }
+        val builder = ConnectionFactoryBuilder.withUrl(url)
+
+        properties.username
+            ?.takeIf { it.isNotBlank() }
+            ?.let(builder::username)
+
+        properties.password
+            ?.takeIf { it.isNotBlank() }
+            ?.let(builder::password)
+
+        builder.configure { options ->
+            properties.properties.forEach { (key, value) ->
+                options.option(Option.valueOf(key), value)
+            }
+        }
+
+        return builder.build()
+    }
+
+    private fun createPooledConnectionFactory(
+        label: String,
+        target: ConnectionFactory,
+        properties: R2dbcProperties,
+    ): ConnectionPool {
+        val pool = properties.pool
+        val builder = ConnectionPoolConfiguration.builder(target)
+            .name("${label}-pool")
+            .initialSize(pool.initialSize)
+            .minIdle(pool.minIdle)
+            .maxSize(pool.maxSize)
+            .maxIdleTime(pool.maxIdleTime)
+            .acquireRetry(pool.acquireRetry)
+
+        pool.maxLifeTime?.let(builder::maxLifeTime)
+        pool.maxAcquireTime?.let(builder::maxAcquireTime)
+        pool.maxCreateConnectionTime?.let(builder::maxCreateConnectionTime)
+        pool.maxValidationTime?.let(builder::maxValidationTime)
+        pool.validationQuery?.takeIf { it.isNotBlank() }?.let(builder::validationQuery)
+        builder.validationDepth(pool.validationDepth)
+
+        return ConnectionPool(builder.build())
+    }
+
+    private fun warmupPool(label: String, pool: ConnectionPool, properties: R2dbcProperties) {
+        val targetConnections = maxOf(properties.pool.initialSize, properties.pool.minIdle)
+        if (targetConnections <= 0) {
+            return
+        }
+
+        log.info(
+            "Warming up R2DBC pool '{}' with {} connections",
+            "${label}-pool",
+            targetConnections,
+        )
+
+        val warmed = pool.warmup().defaultIfEmpty(0).block() ?: 0
+
+        log.info(
+            "R2DBC pool '{}' warmup completed: added={}, allocated={}, idle={}",
+            "${label}-pool",
+            warmed,
+            pool.metrics.map { it.allocatedSize() }.orElse(-1),
+            pool.metrics.map { it.idleSize() }.orElse(-1),
+        )
     }
 }

@@ -34,12 +34,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-http-client")
     implementation("org.springframework.boot:spring-boot-webclient")
-
-    runtimeOnly("io.r2dbc:r2dbc-h2")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("tools.jackson.module:jackson-module-kotlin")
+
+    implementation("io.r2dbc:r2dbc-pool")
+    runtimeOnly("io.r2dbc:r2dbc-h2")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
