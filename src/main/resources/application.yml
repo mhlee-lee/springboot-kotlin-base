@@ -2,6 +2,11 @@
 spring:
   application:
     name: kotlin_base
+  messages:
+    basename: messages/message,validations/validation,enums/enum,errors/error
+    fallback-to-system-locale: false
+  web:
+    locale: ko_KR
 
   sql:
     init:

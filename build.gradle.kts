@@ -32,6 +32,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-http-client")
+    implementation("org.springframework.boot:spring-boot-webclient")
 
     runtimeOnly("io.r2dbc:r2dbc-h2")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
