@@ -12,12 +12,8 @@ import org.springframework.boot.r2dbc.autoconfigure.R2dbcProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
-import org.springframework.core.io.ClassPathResource
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.r2dbc.connection.R2dbcTransactionManager
-import org.springframework.r2dbc.connection.init.CompositeDatabasePopulator
-import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer
-import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator
 import org.springframework.r2dbc.connection.lookup.AbstractRoutingConnectionFactory
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.reactive.TransactionalOperator
@@ -97,19 +93,6 @@ class DataSourceConfig {
             writeConnectionFactory = writeConnectionFactory,
             readConnectionFactory = readConnectionFactory,
         )
-    }
-
-    @Bean
-    fun connectionFactoryInitializer(writeConnectionFactory: ConnectionFactory): ConnectionFactoryInitializer {
-        return ConnectionFactoryInitializer().apply {
-            setConnectionFactory(writeConnectionFactory)
-            setDatabasePopulator(
-                CompositeDatabasePopulator(
-                    ResourceDatabasePopulator(ClassPathResource("schema.sql")),
-                    ResourceDatabasePopulator(ClassPathResource("data.sql")),
-                )
-            )
-        }
     }
 
     @Bean
