@@ -124,10 +124,22 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     }
 
     private fun handleResponseStatusException(ex: ResponseStatusException, locale: Locale): ErrorResponse {
+        val status = HttpStatus.resolve(ex.statusCode.value()) ?: HttpStatus.INTERNAL_SERVER_ERROR
+        val errorCode = when (status) {
+            HttpStatus.BAD_REQUEST -> CommonErrorCode.BAD_REQUEST
+            HttpStatus.UNAUTHORIZED -> CommonErrorCode.UNAUTHORIZED
+            HttpStatus.FORBIDDEN -> CommonErrorCode.FORBIDDEN
+            HttpStatus.NOT_FOUND -> CommonErrorCode.NOT_FOUND
+            HttpStatus.METHOD_NOT_ALLOWED -> CommonErrorCode.METHOD_NOT_ALLOWED
+            HttpStatus.NOT_ACCEPTABLE -> CommonErrorCode.NOT_ACCEPTABLE
+            HttpStatus.UNSUPPORTED_MEDIA_TYPE -> CommonErrorCode.UNSUPPORTED_MEDIA_TYPE
+            else -> CommonErrorCode.INTERNAL_SERVER_ERROR
+        }
+
         return ErrorResponse(
-            ex.statusCode as HttpStatus,
-            code = CommonErrorCode.BAD_REQUEST.code,
-            message = CommonErrorCode.BAD_REQUEST.getMessage(locale = locale)
+            status,
+            code = errorCode.code,
+            message = errorCode.getMessage(locale = locale)
         )
     }
 

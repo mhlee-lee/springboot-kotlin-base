@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.test.kotlin_base.common.constant.CommonConstant.API_VERSION_V1
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class ApplicationHttpIntegrationTests {
     @LocalServerPort
     private var port: Int = 0
@@ -65,10 +67,70 @@ class ApplicationHttpIntegrationTests {
     }
 
     @Test
+    fun `sample put endpoint returns bad request when age header is missing`() {
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"id":"sample-1","ttl":60}""")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0010")
+    }
+
+    @Test
+    fun `sample put endpoint returns bad request when age header is invalid`() {
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
+            .header("age", "xx")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"id":"sample-1","ttl":60}""")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0010")
+    }
+
+    @Test
+    fun `sample put endpoint returns bad request when body is empty`() {
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
+            .header("age", "29")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0012")
+    }
+
+    @Test
+    fun `sample put endpoint returns bad request when gender is invalid`() {
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/sample/UNKNOWN?name=tester")
+            .header("age", "29")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"id":"sample-1","ttl":60}""")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0013")
+    }
+
+    @Test
     fun `unsupported api version returns bad request`() {
         webTestClient.get()
             .uri("/hello/9.9/hello")
             .exchange()
             .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `unknown path returns not found code`() {
+        webTestClient.get()
+            .uri("/unknown")
+            .exchange()
+            .expectStatus().isNotFound
+            .expectBody()
+            .jsonPath("$.code").isEqualTo("CEC0005")
     }
 }
