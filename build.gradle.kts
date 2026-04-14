@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     kotlin("jvm") version PluginVersions.KOTLIN
     kotlin("plugin.spring") version PluginVersions.KOTLIN
+    kotlin("plugin.jpa") version PluginVersions.KOTLIN
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
     id("io.spring.dependency-management") version PluginVersions.SPRING_DEPENDENCY_MANAGEMENT
 //    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
@@ -29,7 +30,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-http-client")
@@ -40,8 +41,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("tools.jackson.module:jackson-module-kotlin")
 
-    implementation("io.r2dbc:r2dbc-pool")
-    runtimeOnly("io.r2dbc:r2dbc-h2")
+    runtimeOnly("com.h2database:h2")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

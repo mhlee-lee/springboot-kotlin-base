@@ -1,9 +1,9 @@
-DROP TABLE IF EXISTS "my_table1";
-DROP TABLE IF EXISTS "address_scopes";
+DROP TABLE IF EXISTS my_table1;
+DROP TABLE IF EXISTS address_scopes;
 
-CREATE TABLE IF NOT EXISTS "my_table1"
+CREATE TABLE IF NOT EXISTS my_table1
 (
-    "id"
+    id
     BIGINT
     GENERATED
     BY
@@ -11,30 +11,30 @@ CREATE TABLE IF NOT EXISTS "my_table1"
     IDENTITY
     PRIMARY
     KEY,
-    "name"
+    name
     VARCHAR
 (
     255
 ),
-    "age" INTEGER
+    age INTEGER
     );
 
-CREATE TABLE IF NOT EXISTS "address_scopes"
+CREATE TABLE IF NOT EXISTS address_scopes
 (
-    "id"
+    id
     VARCHAR
 (
     255
 ) PRIMARY KEY,
-    "vpc_id" VARCHAR
+    vpc_id VARCHAR
 (
     255
 ) NOT NULL,
-    "status" INTEGER,
-    "address_type" CHAR
+    status INTEGER,
+    address_type CHAR
 (
     8
 ),
-    "created_at" TIMESTAMP NOT NULL,
-    "updated_at" TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
     );

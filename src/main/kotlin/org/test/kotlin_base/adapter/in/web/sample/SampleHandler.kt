@@ -1,8 +1,6 @@
 package org.test.kotlin_base.adapter.`in`.web.sample
 
 import jakarta.validation.Validator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 import org.test.kotlin_base.adapter.`in`.web.sample.protocol.*
@@ -18,62 +16,54 @@ class SampleHandler(
     private val validator: Validator,
 ) {
     suspend fun getSample(request: ServerRequest): ServerResponse {
-        return withContext(Dispatchers.IO) {
-            sampleUseCase.getSamples()
-            ServerResponse.ok().buildAndAwait()
-        }
+        sampleUseCase.getSamples()
+        return ServerResponse.ok().buildAndAwait()
     }
 
     suspend fun addressScope(request: ServerRequest): ServerResponse {
-        return withContext(Dispatchers.IO) {
-            val result = sampleUseCase.getAddressScopes()
-            val response = result.map { AddressScopeResponse.byDomain(it) }
-            ServerResponse.ok().bodyValueAndAwait(response)
-        }
+        val result = sampleUseCase.getAddressScopes()
+        val response = result.map { AddressScopeResponse.byDomain(it) }
+        return ServerResponse.ok().bodyValueAndAwait(response)
     }
 
     suspend fun putSample(request: ServerRequest): ServerResponse {
-        return withContext(Dispatchers.IO) {
-            val rawAge = request.headers().firstHeader("age")
-                ?: throw RequiredHeaderException("age")
-            val age = rawAge.toIntOrNull()
-                ?: throw InvalidHeaderValueException("age")
-            val name = request.queryParamOrNull("name")
-                ?: throw RequiredQueryParameterException("name")
-            val gender = request.pathVariableOrNull("gender")
-                ?.let { raw -> runCatching { enumValueOf<Gender>(raw) }.getOrNull() }
-                ?: throw InvalidEnumPathParameterException("gender")
-            val requestBody = request.awaitBodyOrNull<SampleRequest>()
-                ?.let(validator::validateOrThrow)
-                ?: throw RequiredRequestBodyException()
+        val rawAge = request.headers().firstHeader("age")
+            ?: throw RequiredHeaderException("age")
+        val age = rawAge.toIntOrNull()
+            ?: throw InvalidHeaderValueException("age")
+        val name = request.queryParamOrNull("name")
+            ?: throw RequiredQueryParameterException("name")
+        val gender = request.pathVariableOrNull("gender")
+            ?.let { raw -> runCatching { enumValueOf<Gender>(raw) }.getOrNull() }
+            ?: throw InvalidEnumPathParameterException("gender")
+        val requestBody = request.awaitBodyOrNull<SampleRequest>()
+            ?.let(validator::validateOrThrow)
+            ?: throw RequiredRequestBodyException()
 
-            val response = SampleResponse.from(
-                sampleUseCase.putSample(
-                    PutSampleCommand(
-                        name = name,
-                        age = age,
-                        gender = gender,
-                        id = requestBody.id,
-                        ttl = requestBody.ttl,
-                    )
+        val response = SampleResponse.from(
+            sampleUseCase.putSample(
+                PutSampleCommand(
+                    name = name,
+                    age = age,
+                    gender = gender,
+                    id = requestBody.id,
+                    ttl = requestBody.ttl,
                 )
             )
+        )
 
-            ServerResponse.ok().bodyValueAndAwait(response)
-        }
+        return ServerResponse.ok().bodyValueAndAwait(response)
     }
 
     suspend fun validateSample(request: ServerRequest): ServerResponse {
-        return withContext(Dispatchers.IO) {
-            val requestBody = request.awaitBodyOrNull<SampleValidationRequest>()
-                ?.let(validator::validateOrThrow)
-                ?: throw RequiredRequestBodyException()
+        val requestBody = request.awaitBodyOrNull<SampleValidationRequest>()
+            ?.let(validator::validateOrThrow)
+            ?: throw RequiredRequestBodyException()
 
-            val response = SampleValidationResponse.from(
-                sampleUseCase.validateSample(requestBody.toCommand())
-            )
+        val response = SampleValidationResponse.from(
+            sampleUseCase.validateSample(requestBody.toCommand())
+        )
 
-            ServerResponse.ok().bodyValueAndAwait(response)
-        }
+        return ServerResponse.ok().bodyValueAndAwait(response)
     }
 }
