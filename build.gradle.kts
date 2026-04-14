@@ -66,7 +66,7 @@ jooq {
                 properties {
                     property {
                         key = "scripts"
-                        value = "src/main/resources/schema.sql"
+                        value = "src/jooq/schema.sql"
                     }
                     property {
                         key = "defaultNameCase"

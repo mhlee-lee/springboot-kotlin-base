@@ -10,9 +10,6 @@ spring:
   web:
     locale: ko_KR
 
-  sql:
-    init:
-      mode: never
   datasource:
     write:
       hikari:
