@@ -1,8 +1,5 @@
 package org.test.kotlin_base.common.extensions
 
-import reactor.util.function.Tuple4
-import reactor.util.function.Tuples
-
 /**
  * @author MooHee Lee
  */
@@ -57,5 +54,5 @@ fun <T, A, B, C, D> Iterable<T>.unzipBy(
         fourthValues += fourth(element)
     }
 
-    return Tuples.of(firstValues, secondValues, thirdValues, fourthValues)
+    return Tuple4(firstValues, secondValues, thirdValues, fourthValues)
 }

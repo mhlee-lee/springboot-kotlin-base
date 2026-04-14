@@ -1,7 +1,6 @@
 package org.test.kotlin_base.common.config
 
 import io.micrometer.context.integration.Slf4jThreadLocalAccessor
-import org.slf4j.MDC
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
@@ -24,12 +23,6 @@ class TraceIdWebFilter : WebFilter {
         return chain.filter(exchange)
             .contextWrite { context ->
                 context.put(Slf4jThreadLocalAccessor.KEY, mapOf(MDC_TRACE_ID_KEY to traceId))
-            }
-            .doFirst {
-                MDC.put(MDC_TRACE_ID_KEY, traceId)
-            }
-            .doFinally {
-                MDC.remove(MDC_TRACE_ID_KEY)
             }
     }
 

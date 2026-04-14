@@ -110,7 +110,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                 field = fieldError.field,
                 message = message,
             )
-        }
+        }.sortedBy { it.field }
 
         return errorResponse(
             status = HttpStatus.BAD_REQUEST,

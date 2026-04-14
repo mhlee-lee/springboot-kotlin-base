@@ -21,17 +21,17 @@ class TransactionalExecutorAdapter(
 ) : TransactionalPort {
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override suspend fun <T : Any> execute(block: suspend () -> T): T {
+    override suspend fun <T> execute(block: suspend () -> T): T {
         log.debug("execute() - route={}", DatabaseRoute.WRITE)
         return runInTransaction(writeTransactionalOperator, DatabaseRoute.WRITE, block)
     }
 
-    override suspend fun <T : Any> executeReadOnly(block: suspend () -> T): T {
+    override suspend fun <T> executeReadOnly(block: suspend () -> T): T {
         log.debug("executeReadonly() - route={}", DatabaseRoute.READ)
         return runInTransaction(readTransactionalOperator, DatabaseRoute.READ, block)
     }
 
-    private suspend fun <T : Any> runInTransaction(
+    private suspend fun <T> runInTransaction(
         transactionalOperator: TransactionalOperator,
         route: DatabaseRoute,
         block: suspend () -> T,

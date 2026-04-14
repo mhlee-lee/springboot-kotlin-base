@@ -12,7 +12,6 @@ import org.test.kotlin_base.application.port.`in`.sample.model.PutSampleCommand
 import org.test.kotlin_base.common.exception.*
 import org.test.kotlin_base.common.extensions.validateOrThrow
 import org.test.kotlin_base.domain.sample.model.Gender
-import kotlin.enums.enumEntries
 
 @Component
 class SampleHandler(
@@ -37,7 +36,7 @@ class SampleHandler(
         val name = request.queryParamOrNull("name")
             ?: throw RequiredQueryParameterException("name")
         val gender = request.pathVariableOrNull("gender")
-            ?.let { raw -> enumEntries<Gender>().firstOrNull { it.name == raw } }
+            ?.let { raw -> runCatching { enumValueOf<Gender>(raw) }.getOrNull() }
             ?: throw InvalidEnumPathParameterException("gender")
         val requestBody = request.awaitBodyOrNull<SampleRequest>()
             ?.let(validator::validateOrThrow)
