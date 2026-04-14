@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS "address_scopes"
     255
 ) NOT NULL,
     "status" INTEGER,
+    "address_type" CHAR
+(
+    8
+),
     "created_at" TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP NOT NULL
     );

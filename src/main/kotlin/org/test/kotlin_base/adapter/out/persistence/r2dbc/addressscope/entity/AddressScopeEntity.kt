@@ -15,6 +15,8 @@ data class AddressScopeEntity(
     val vpcId: String,
     @Column("status")
     val status: Int? = null,
+    @Column("address_type")
+    val addressType: AddressType,
     @Column("created_at")
     val created: LocalDateTime,
     @Column("updated_at")
@@ -26,6 +28,7 @@ fun AddressScopeEntity.toDomain(): AddressScope {
         id = id,
         vpcId = vpcId,
         status = status,
+        addressType = addressType.toDomainEnum(),
         created = created,
         updated = updated,
     )
