@@ -101,7 +101,7 @@ jooq {
                 isKotlinNotNullRecordAttributes = false
             }
             target {
-                packageName = "org.test.kotlin_base.jooq.generated"
+                packageName = "com.example.skeleton.jooq.generated"
                 directory = jooqGeneratedDir.get().asFile.absolutePath
             }
         }

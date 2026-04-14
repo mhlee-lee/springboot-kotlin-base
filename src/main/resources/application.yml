@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: kotlin_base
+    name: skeleton
   messages:
     basename: messages/message,validations/validation,enums/enum,errors/error
     fallback-to-system-locale: false
@@ -40,7 +40,7 @@ logging:
   pattern:
     level: "%5p [traceId:%X{traceId:-}]"
   level:
-    org.test.kotlin_base: DEBUG
+    com.example.skeleton: DEBUG
     org.springframework: ERROR
     org.springframework.web.reactive.function.client: DEBUG
     org.springframework.transaction: DEBUG
