@@ -23,28 +23,20 @@ class SampleService(
     private val log = LoggerFactory.getLogger(this::class.java)
 
     override suspend fun getSamples(): List<Sample> {
-        val writeSamples = transactionalPort.execute {
-            loadSamplePort.findAll()
-        }
         val readSamples = transactionalPort.executeReadOnly {
             loadSamplePort.findAll()
         }
 
-        log.info("writeSamples: {}", writeSamples.toJson())
         log.info("readSamples: {}", readSamples.toJson())
 
         return readSamples
     }
 
     override suspend fun getAddressScopes(): List<AddressScope> {
-        val writeAddressScopes = transactionalPort.execute {
-            loadAddressScopePort.findAll()
-        }
         val readAddressScopes = transactionalPort.executeReadOnly {
             loadAddressScopePort.findAll()
         }
 
-        log.info("writeAddressScopes: {}", writeAddressScopes.toJson())
         log.info("readAddressScopes: {}", readAddressScopes.toJson())
 
         return readAddressScopes

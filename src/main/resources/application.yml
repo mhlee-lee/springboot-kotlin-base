@@ -14,13 +14,24 @@ spring:
     init:
       mode: never
   datasource:
-    url: jdbc:h2:mem:kotlinbase;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-    hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
+    write:
+      hikari:
+        pool-name: write-hikari-pool
+        jdbc-url: jdbc:h2:mem:kotlinbase-write;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
+        minimum-idle: 5
+        maximum-pool-size: 20
+    read:
+      hikari:
+        pool-name: read-hikari-pool
+        jdbc-url: jdbc:h2:mem:kotlinbase-read;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
+        minimum-idle: 5
+        maximum-pool-size: 20
 
 management:
   endpoints:

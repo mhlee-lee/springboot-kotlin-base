@@ -23,6 +23,7 @@ class TransactionalExecutorAdapter(
 
     override suspend fun <T> execute(block: () -> T): T {
         return runInTransaction(
+            role = "write",
             transactionTemplate = writeTransactionTemplate,
             readOnly = false,
             block = block,
@@ -31,6 +32,7 @@ class TransactionalExecutorAdapter(
 
     override suspend fun <T> executeReadOnly(block: () -> T): T {
         return runInTransaction(
+            role = "read",
             transactionTemplate = readTransactionTemplate,
             readOnly = true,
             block = block,
@@ -39,6 +41,7 @@ class TransactionalExecutorAdapter(
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun <T> runInTransaction(
+        role: String,
         transactionTemplate: TransactionTemplate,
         readOnly: Boolean,
         block: () -> T,
@@ -46,7 +49,8 @@ class TransactionalExecutorAdapter(
         return withContext(databaseCoroutineDispatcher) {
             // Spring JDBC transaction state is thread-bound, so the whole callback must stay on one virtual thread.
             log.debug(
-                "runInTransaction() - readOnly={}, thread={}, virtual={}",
+                "runInTransaction() - role={}, readOnly={}, thread={}, virtual={}",
+                role,
                 readOnly,
                 Thread.currentThread().name,
                 Thread.currentThread().isVirtual,

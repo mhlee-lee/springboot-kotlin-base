@@ -43,7 +43,12 @@ class ApplicationHttpIntegrationTests {
             .uri("/sample/$API_VERSION_V1/sample")
             .exchange()
             .expectStatus().isOk
-            .expectBody().isEmpty
+            .expectBody()
+            .jsonPath("$").isArray
+            .jsonPath("$[0].name").isEqualTo("Alice")
+            .jsonPath("$[0].age").isEqualTo(31)
+            .jsonPath("$[1].name").isEqualTo("Bob")
+            .jsonPath("$[1].age").isEqualTo(27)
 
         webTestClient.get()
             .uri("/sample/$API_VERSION_V1/addressScope")
