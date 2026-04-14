@@ -44,7 +44,7 @@ class TransactionalExecutorAdapter(
         block: () -> T,
     ): T {
         return withContext(databaseCoroutineDispatcher) {
-            // JPA transaction state is thread-bound, so the whole callback must stay on one virtual thread.
+            // Spring JDBC transaction state is thread-bound, so the whole callback must stay on one virtual thread.
             log.debug(
                 "runInTransaction() - readOnly={}, thread={}, virtual={}",
                 readOnly,

@@ -3,9 +3,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     kotlin("jvm") version PluginVersions.KOTLIN
     kotlin("plugin.spring") version PluginVersions.KOTLIN
-    kotlin("plugin.jpa") version PluginVersions.KOTLIN
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
     id("io.spring.dependency-management") version PluginVersions.SPRING_DEPENDENCY_MANAGEMENT
+    id("org.jooq.jooq-codegen-gradle") version PluginVersions.JOOQ
 //    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
 }
 
@@ -30,7 +30,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-http-client")
@@ -42,6 +42,8 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
 
     runtimeOnly("com.h2database:h2")
+    jooqCodegen("com.h2database:h2")
+    jooqCodegen("org.jooq:jooq-meta-extensions")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
@@ -53,8 +55,50 @@ dependencies {
     testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
 }
 
+val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
+
+jooq {
+    configuration {
+        generator {
+            name = "org.jooq.codegen.KotlinGenerator"
+            database {
+                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                properties {
+                    property {
+                        key = "scripts"
+                        value = "src/main/resources/schema.sql"
+                    }
+                    property {
+                        key = "defaultNameCase"
+                        value = "lower"
+                    }
+                    property {
+                        key = "unqualifiedSchema"
+                        value = "none"
+                    }
+                }
+            }
+            generate {
+                isDeprecated = false
+                isRecords = true
+                isPojos = false
+                isDaos = false
+                isKotlinNotNullPojoAttributes = true
+                isKotlinNotNullRecordAttributes = false
+            }
+            target {
+                packageName = "org.test.kotlin_base.adapter.out.persistence.jooq.generated"
+                directory = jooqGeneratedDir.get().asFile.absolutePath
+            }
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(BuildVersions.JAVA.majorVersion.toInt())
+    sourceSets.named("main") {
+        kotlin.srcDir(jooqGeneratedDir)
+    }
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xjsr305=strict",
@@ -66,6 +110,10 @@ kotlin {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(tasks.named("jooqCodegen"))
 }
 
 //openapi3 {

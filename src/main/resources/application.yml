@@ -21,10 +21,6 @@ spring:
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: none
 
 management:
   endpoints:
@@ -38,6 +34,5 @@ logging:
   level:
     org.test.kotlin_base: DEBUG
     org.springframework: ERROR
-    org.springframework.orm.jpa: INFO
     org.springframework.web.reactive.function.client: DEBUG
     org.springframework.transaction: DEBUG

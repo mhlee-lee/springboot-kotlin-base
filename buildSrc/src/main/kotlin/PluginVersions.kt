@@ -2,6 +2,7 @@ object PluginVersions {
     const val KOTLIN = "2.3.20"
     const val SPRING_BOOT = "4.0.5"
     const val SPRING_DEPENDENCY_MANAGEMENT = "1.1.7"
+    const val JOOQ = "3.19.31"
 
 //    const val RESTDOCS_API_SPEC = "0.20.0"
 

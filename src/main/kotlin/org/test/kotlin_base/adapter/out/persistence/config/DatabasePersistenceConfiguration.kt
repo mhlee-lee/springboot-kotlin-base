@@ -1,4 +1,4 @@
-package org.test.kotlin_base.adapter.out.persistence.jpa.config
+package org.test.kotlin_base.adapter.out.persistence.config
 
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -10,7 +10,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import java.util.concurrent.Executors
 
 @Configuration
-class JpaPersistenceConfiguration {
+class DatabasePersistenceConfiguration {
 
     @Bean("databaseCoroutineDispatcher", destroyMethod = "close")
     fun databaseCoroutineDispatcher(): ExecutorCoroutineDispatcher {
