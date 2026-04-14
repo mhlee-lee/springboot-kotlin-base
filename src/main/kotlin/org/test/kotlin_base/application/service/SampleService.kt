@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service
 import org.test.kotlin_base.application.port.`in`.sample.SampleUseCase
 import org.test.kotlin_base.application.port.`in`.sample.model.PutSampleCommand
 import org.test.kotlin_base.application.port.`in`.sample.model.PutSampleResult
+import org.test.kotlin_base.application.port.`in`.sample.model.ValidateSampleCommand
+import org.test.kotlin_base.application.port.`in`.sample.model.ValidateSampleResult
 import org.test.kotlin_base.application.port.out.addressscope.LoadAddressScopePort
 import org.test.kotlin_base.application.port.out.sample.LoadSamplePort
 import org.test.kotlin_base.application.port.out.transaction.TransactionalPort
@@ -55,6 +57,15 @@ class SampleService(
             gender = command.gender,
             id = command.id,
             ttl = command.ttl,
+        )
+    }
+
+    override suspend fun validateSample(command: ValidateSampleCommand): ValidateSampleResult {
+        return ValidateSampleResult(
+            quantity = command.quantity,
+            name = command.name,
+            requiredValue = command.requiredValue,
+            code = command.code,
         )
     }
 }

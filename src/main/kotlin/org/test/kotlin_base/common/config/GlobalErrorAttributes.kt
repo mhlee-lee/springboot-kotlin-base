@@ -2,6 +2,7 @@ package org.test.kotlin_base.common.config
 
 import jakarta.validation.ConstraintViolationException
 import jakarta.validation.constraints.*
+import org.hibernate.validator.constraints.Range
 import org.springframework.boot.json.JsonParseException
 import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.webflux.error.DefaultErrorAttributes
@@ -97,17 +98,16 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         locale: Locale,
     ): ApiErrorResponse {
         val validationErrors = ex.bindingResult.fieldErrors.map { fieldError ->
-            val message = fieldError.codes
-                ?.firstNotNullOfOrNull { code ->
-                    MessageConverter.getMessageOrNull(code, fieldError.arguments, locale)
-                }
-                ?: fieldError.defaultMessage
-                ?: "Invalid value"
+            val message = fieldError.defaultMessage
+                ?: fieldError.codes
+                    ?.firstNotNullOfOrNull { code ->
+                        MessageConverter.getMessageOrNull(code, fieldError.arguments, locale)
+                    }
+                ?: ErrorMessages.INVALID_VALUE
 
             ApiFieldError(
                 source = ErrorSource.BODY.wireName,
                 field = fieldError.field,
-                reason = normalizeReason(fieldError.code),
                 message = message,
             )
         }
@@ -138,8 +138,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                         source = ErrorSource.BODY.wireName,
                         field = rootCause.path.joinToString(".") { reference ->
                             reference.propertyName ?: if (reference.index >= 0) "[${reference.index}]" else ""
-                        }.ifBlank { "body" },
-                        reason = "invalid_format",
+                        }.ifBlank { ErrorFieldNames.BODY },
                         message = rootCause.originalMessage
                             ?: CommonErrorCode.INVALID_FORMAT.getMessage(locale = locale),
                     )
@@ -152,8 +151,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                         source = ErrorSource.BODY.wireName,
                         field = rootCause.path.joinToString(".") { reference ->
                             reference.propertyName ?: if (reference.index >= 0) "[${reference.index}]" else ""
-                        }.ifBlank { "body" },
-                        reason = "mismatch",
+                        }.ifBlank { ErrorFieldNames.BODY },
                         message = rootCause.originalMessage ?: CommonErrorCode.MISMATCH.getMessage(locale = locale),
                     )
                 )
@@ -163,8 +161,7 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                 errors = listOf(
                     ApiFieldError(
                         source = ErrorSource.BODY.wireName,
-                        field = "body",
-                        reason = "json_parse",
+                        field = ErrorFieldNames.BODY,
                         message = CommonErrorCode.JSON_PARSE_ERROR.getMessage(locale = locale),
                     )
                 )
@@ -219,24 +216,24 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             val property = extractLeafFieldName(violation.propertyPath.toString())
             val constraint = violation.constraintDescriptor.annotation.annotationClass.simpleName ?: "Unknown"
             val objectName = violation.rootBeanClass?.simpleName?.lowercase() ?: "object"
+            val args = extractConstraintArguments(violation.constraintDescriptor.annotation)
+            val messageCodes = messageResolver.resolveMessageCodes(
+                constraint,
+                objectName,
+                property,
+                violation.leafBean.javaClass,
+            )
+            val message = violation.message
+                ?: messageCodes.firstNotNullOfOrNull { code ->
+                    MessageConverter.getMessageOrNull(code, args, locale)
+                }
+                ?: property
 
-            val messageCode = messageResolver.resolveMessageCodes(constraint, objectName, property, violation.leafBean.javaClass)
-                .firstOrNull()
-
-            if (messageCode != null) {
-                val args = extractConstraintArguments(violation.constraintDescriptor.annotation)
-                ApiFieldError(
-                    source = ErrorSource.BODY.wireName,
-                    field = property,
-                    reason = normalizeReason(constraint),
-                    message = MessageConverter.getMessage(
-                        code = messageCode,
-                        args = args,
-                        locale = locale,
-                        defaultMessage = violation.message ?: property,
-                    ),
-                )
-            } else null
+            ApiFieldError(
+                source = ErrorSource.BODY.wireName,
+                field = property,
+                message = message,
+            )
         }.sortedBy { it.field }
 
         return errorResponse(
@@ -297,31 +294,14 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     // validation 어노테이션에서 속성값 추출
     private fun extractConstraintArguments(annotation: Annotation): Array<Any> {
         return when (annotation) {
+            is Range -> arrayOf(annotation.min, annotation.max)
             is Size -> arrayOf(annotation.min, annotation.max)
             is Min -> arrayOf(annotation.value)
             is Max -> arrayOf(annotation.value)
             is DecimalMin -> arrayOf(annotation.value)
             is DecimalMax -> arrayOf(annotation.value)
-            is Pattern-> arrayOf(annotation.regexp)
+            is Pattern -> arrayOf(annotation.regexp)
             else -> emptyArray()
-        }
-    }
-
-    private fun normalizeReason(raw: String?): String {
-        return when (raw) {
-            null -> "invalid"
-            "NotBlank" -> "not_blank"
-            "NotNull" -> "not_null"
-            "Positive" -> "positive"
-            "PositiveOrZero" -> "positive_or_zero"
-            "Size" -> "size"
-            "Min" -> "min"
-            "Max" -> "max"
-            "Pattern" -> "pattern"
-            "Email" -> "email"
-            else -> raw
-                .replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
-                .lowercase()
         }
     }
 

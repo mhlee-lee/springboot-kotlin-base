@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus
 import org.test.kotlin_base.common.errors.ApiFieldError
 import org.test.kotlin_base.common.errors.ErrorCode
 
-class RequestValidationException(
+open class RequestValidationException(
     val status: HttpStatus = HttpStatus.BAD_REQUEST,
     val errorCode: ErrorCode,
     val fieldErrors: List<ApiFieldError>,

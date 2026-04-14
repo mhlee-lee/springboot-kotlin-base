@@ -18,6 +18,7 @@ class SampleRouter(private val sampleHandler: SampleHandler) {
                 GET("sample", sampleHandler::getSample)
                 GET("addressScope", sampleHandler::addressScope)
                 PUT("sample/{gender}", sampleHandler::putSample)
+                POST("validation", sampleHandler::validateSample)
             }
         }
     }

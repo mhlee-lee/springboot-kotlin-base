@@ -8,6 +8,9 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.test.kotlin_base.common.constant.CommonConstant.API_VERSION_V1
+import org.test.kotlin_base.common.errors.CommonErrorCode
+import org.test.kotlin_base.common.errors.ErrorFieldNames
+import org.test.kotlin_base.common.errors.ErrorSource
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -76,12 +79,11 @@ class ApplicationHttpIntegrationTests {
             .expectStatus().isBadRequest
             .expectHeader().exists("X-Trace-Id")
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0010")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_HEADER_PARAMETER.code)
             .jsonPath("$.path").isEqualTo("/sample/1.0/sample/FEMALE")
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo("header")
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.HEADER.wireName)
             .jsonPath("$.errors[0].field").isEqualTo("age")
-            .jsonPath("$.errors[0].reason").isEqualTo("required")
     }
 
     @Test
@@ -94,11 +96,10 @@ class ApplicationHttpIntegrationTests {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0010")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_HEADER_PARAMETER.code)
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo("header")
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.HEADER.wireName)
             .jsonPath("$.errors[0].field").isEqualTo("age")
-            .jsonPath("$.errors[0].reason").isEqualTo("invalid_value")
     }
 
     @Test
@@ -110,11 +111,10 @@ class ApplicationHttpIntegrationTests {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0012")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.EMPTY_BODY.code)
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo("body")
-            .jsonPath("$.errors[0].field").isEqualTo("body")
-            .jsonPath("$.errors[0].reason").isEqualTo("required")
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.BODY.wireName)
+            .jsonPath("$.errors[0].field").isEqualTo(ErrorFieldNames.BODY)
     }
 
     @Test
@@ -127,11 +127,10 @@ class ApplicationHttpIntegrationTests {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0013")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code)
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo("path")
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.PATH.wireName)
             .jsonPath("$.errors[0].field").isEqualTo("gender")
-            .jsonPath("$.errors[0].reason").isEqualTo("invalid_enum")
     }
 
     @Test
@@ -144,14 +143,12 @@ class ApplicationHttpIntegrationTests {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0011")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.VALIDATION_FAIL.code)
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo("body")
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.BODY.wireName)
             .jsonPath("$.errors[0].field").isEqualTo("id")
-            .jsonPath("$.errors[0].reason").isEqualTo("not_blank")
-            .jsonPath("$.errors[1].source").isEqualTo("body")
+            .jsonPath("$.errors[1].source").isEqualTo(ErrorSource.BODY.wireName)
             .jsonPath("$.errors[1].field").isEqualTo("ttl")
-            .jsonPath("$.errors[1].reason").isEqualTo("positive")
     }
 
     @Test
@@ -170,7 +167,7 @@ class ApplicationHttpIntegrationTests {
             .expectStatus().isNotFound
             .expectHeader().exists("X-Trace-Id")
             .expectBody()
-            .jsonPath("$.code").isEqualTo("CEC0005")
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.NOT_FOUND.code)
             .jsonPath("$.path").isEqualTo("/unknown")
             .jsonPath("$.traceId").exists()
     }

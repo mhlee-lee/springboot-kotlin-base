@@ -12,13 +12,12 @@ data class ApiErrorResponse(
 data class ApiFieldError(
     val source: String,
     val field: String,
-    val reason: String,
     val message: String,
 )
 
 enum class ErrorSource(val wireName: String) {
-    BODY("body"),
-    QUERY("query"),
-    PATH("path"),
-    HEADER("header"),
+    BODY("BODY"),
+    QUERY("QUERY"),
+    PATH("PATH"),
+    HEADER("HEADER"),
 }
