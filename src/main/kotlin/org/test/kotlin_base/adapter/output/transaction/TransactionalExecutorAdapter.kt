@@ -21,23 +21,19 @@ class TransactionalExecutorAdapter(
 
     private object UninitializedResult
 
-    override suspend fun <T> execute(block: () -> T): T {
-        return runInTransaction(
-            role = "write",
-            transactionTemplate = writeTransactionTemplate,
-            readOnly = false,
-            block = block,
-        )
-    }
+    override suspend fun <T> execute(block: () -> T): T = runInTransaction(
+        role = "write",
+        transactionTemplate = writeTransactionTemplate,
+        readOnly = false,
+        block = block,
+    )
 
-    override suspend fun <T> executeReadOnly(block: () -> T): T {
-        return runInTransaction(
-            role = "read",
-            transactionTemplate = readTransactionTemplate,
-            readOnly = true,
-            block = block,
-        )
-    }
+    override suspend fun <T> executeReadOnly(block: () -> T): T = runInTransaction(
+        role = "read",
+        transactionTemplate = readTransactionTemplate,
+        readOnly = true,
+        block = block,
+    )
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun <T> runInTransaction(
@@ -45,23 +41,21 @@ class TransactionalExecutorAdapter(
         transactionTemplate: TransactionTemplate,
         readOnly: Boolean,
         block: () -> T,
-    ): T {
-        return withContext(databaseCoroutineDispatcher) {
-            // Spring JDBC transaction state is thread-bound, so the whole callback must stay on one virtual thread.
-            log.debug(
-                "runInTransaction() - role={}, readOnly={}, thread={}, virtual={}",
-                role,
-                readOnly,
-                Thread.currentThread().name,
-                Thread.currentThread().isVirtual,
-            )
+    ): T = withContext(databaseCoroutineDispatcher) {
+        // Spring JDBC transaction state is thread-bound, so the whole callback must stay on one virtual thread.
+        log.debug(
+            "runInTransaction() - role={}, readOnly={}, thread={}, virtual={}",
+            role,
+            readOnly,
+            Thread.currentThread().name,
+            Thread.currentThread().isVirtual,
+        )
 
-            var result: Any? = UninitializedResult
-            transactionTemplate.execute {
-                result = block()
-            }
-
-            result as T
+        var result: Any? = UninitializedResult
+        transactionTemplate.execute {
+            result = block()
         }
+
+        result as T
     }
 }

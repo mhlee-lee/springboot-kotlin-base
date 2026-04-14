@@ -40,7 +40,7 @@ class SampleValidationIntegrationTests {
                   "code": "ABC-12",
                   "ttl": 60
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             .exchange()
             .expectStatus().isOk
@@ -65,7 +65,7 @@ class SampleValidationIntegrationTests {
                   "code": "abc-12",
                   "ttl": 60
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             .exchange()
             .expectStatus().isBadRequest

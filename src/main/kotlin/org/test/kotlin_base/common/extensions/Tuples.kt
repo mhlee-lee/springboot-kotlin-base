@@ -8,7 +8,7 @@ data class Tuple6<T1, T2, T3, T4, T5, T6>(
     val third: T3,
     val fourth: T4,
     val fifth: T5,
-    val sixth: T6
+    val sixth: T6,
 )
 
 data class Tuple7<T1, T2, T3, T4, T5, T6, T7>(
@@ -18,7 +18,7 @@ data class Tuple7<T1, T2, T3, T4, T5, T6, T7>(
     val fourth: T4,
     val fifth: T5,
     val sixth: T6,
-    val seventh: T7
+    val seventh: T7,
 )
 
 data class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>(
@@ -29,5 +29,5 @@ data class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>(
     val fifth: T5,
     val sixth: T6,
     val seventh: T7,
-    val eighth: T8
+    val eighth: T8,
 )

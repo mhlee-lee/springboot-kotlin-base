@@ -7,9 +7,6 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 class KotlinBaseApplicationTests {
-
     @Test
-    fun contextLoads() {
-    }
-
+    fun contextLoads() = Unit
 }

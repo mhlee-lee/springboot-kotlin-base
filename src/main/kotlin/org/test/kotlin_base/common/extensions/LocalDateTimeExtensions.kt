@@ -11,14 +11,9 @@ fun LocalDateTime.atEndOfDay(): LocalDateTime = with(LocalTime.of(23, 59, 59))
 fun LocalDateTime.atMidNight(): LocalDateTime = with(LocalTime.of(0, 0, 0))
 fun LocalDate.atEndOfDay(): LocalDateTime = LocalDateTime.of(this, LocalTime.of(23, 59, 59))
 
-fun LocalDateTime.setTime(hour: Int, minute: Int, second: Int): LocalDateTime {
-    return this.with(LocalTime.of(hour, minute, second))
-}
+fun LocalDateTime.setTime(hour: Int, minute: Int, second: Int): LocalDateTime =
+    this.with(LocalTime.of(hour, minute, second))
 
-fun LocalDateTime.toString(datePattern: DatePatternEnum): String {
-    return this.format(datePattern.formatter)
-}
+fun LocalDateTime.toString(datePattern: DatePatternEnum): String = this.format(datePattern.formatter)
 
-fun LocalDate.toString(datePattern: DatePatternEnum): String {
-    return this.format(datePattern.formatter)
-}
+fun LocalDate.toString(datePattern: DatePatternEnum): String = this.format(datePattern.formatter)

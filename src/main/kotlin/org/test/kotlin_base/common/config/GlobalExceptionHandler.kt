@@ -31,9 +31,7 @@ class GlobalExceptionHandler(
         setViewResolvers(viewResolvers.orderedStream().toList())
     }
 
-    override fun getRoutingFunction(errorAttributes: ErrorAttributes): RouterFunction<ServerResponse> {
-        return router {
-            (all()) { renderErrorResponse(it) }
-        }
+    override fun getRoutingFunction(errorAttributes: ErrorAttributes): RouterFunction<ServerResponse> = router {
+        (all()) { renderErrorResponse(it) }
     }
 }

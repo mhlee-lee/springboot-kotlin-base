@@ -18,7 +18,7 @@ open class SingleFieldRequestValidationException(
             source = source.wireName,
             field = field,
             message = message,
-        )
+        ),
     ),
     cause = cause,
 )
@@ -37,39 +37,40 @@ open class InvalidRequestFieldException(
     cause = cause,
 )
 
-class RequiredHeaderException(field: String) : InvalidRequestFieldException(
-    source = ErrorSource.HEADER,
-    field = field,
-    errorCode = CommonErrorCode.INVALID_HEADER_PARAMETER,
-)
+class RequiredHeaderException(field: String) :
+    InvalidRequestFieldException(
+        source = ErrorSource.HEADER,
+        field = field,
+        errorCode = CommonErrorCode.INVALID_HEADER_PARAMETER,
+    )
 
-class InvalidHeaderValueException(field: String) : InvalidRequestFieldException(
-    source = ErrorSource.HEADER,
-    field = field,
-    errorCode = CommonErrorCode.INVALID_HEADER_PARAMETER,
-)
+class InvalidHeaderValueException(field: String) :
+    InvalidRequestFieldException(
+        source = ErrorSource.HEADER,
+        field = field,
+        errorCode = CommonErrorCode.INVALID_HEADER_PARAMETER,
+    )
 
-class RequiredQueryParameterException(field: String) : InvalidRequestFieldException(
-    source = ErrorSource.QUERY,
-    field = field,
-    errorCode = CommonErrorCode.INVALID_PARAMETER,
-)
+class RequiredQueryParameterException(field: String) :
+    InvalidRequestFieldException(
+        source = ErrorSource.QUERY,
+        field = field,
+        errorCode = CommonErrorCode.INVALID_PARAMETER,
+    )
 
-open class InvalidPathParameterException(
-    field: String,
-) : InvalidRequestFieldException(
-    source = ErrorSource.PATH,
-    field = field,
-    errorCode = CommonErrorCode.INVALID_PARAMETER,
-)
+open class InvalidPathParameterException(field: String) :
+    InvalidRequestFieldException(
+        source = ErrorSource.PATH,
+        field = field,
+        errorCode = CommonErrorCode.INVALID_PARAMETER,
+    )
 
 class InvalidEnumPathParameterException(field: String) : InvalidPathParameterException(field)
 
-class RequiredRequestBodyException(
-    field: String = ErrorFieldNames.BODY,
-) : SingleFieldRequestValidationException(
-    errorCode = CommonErrorCode.EMPTY_BODY,
-    source = ErrorSource.BODY,
-    field = field,
-    message = CommonErrorCode.EMPTY_BODY.getMessage(),
-)
+class RequiredRequestBodyException(field: String = ErrorFieldNames.BODY) :
+    SingleFieldRequestValidationException(
+        errorCode = CommonErrorCode.EMPTY_BODY,
+        source = ErrorSource.BODY,
+        field = field,
+        message = CommonErrorCode.EMPTY_BODY.getMessage(),
+    )

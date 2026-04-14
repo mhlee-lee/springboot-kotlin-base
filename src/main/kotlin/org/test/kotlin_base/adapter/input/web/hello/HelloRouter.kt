@@ -12,11 +12,9 @@ import org.test.kotlin_base.common.constant.CommonConstant.API_VERSION_V1
 @Configuration
 class HelloRouter(private val helloHandler: HelloHandler) {
     @Bean
-    fun coRouteHello(): RouterFunction<ServerResponse> {
-        return coRouter {
-            (accept(MediaType.APPLICATION_JSON) and version(API_VERSION_V1) and "/hello/{version}").nest {
-                GET("hello", helloHandler::getHello)
-            }
+    fun coRouteHello(): RouterFunction<ServerResponse> = coRouter {
+        (accept(MediaType.APPLICATION_JSON) and version(API_VERSION_V1) and "/hello/{version}").nest {
+            GET("hello", helloHandler::getHello)
         }
     }
 }

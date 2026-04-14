@@ -1,0 +1,46 @@
+complexity:
+  LongParameterList:
+    allowedFunctionParameters: 6
+    allowedConstructorParameters: 7
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+
+naming:
+  FunctionNaming:
+    excludeClassPattern: '.*(Test|Tests|IT|IntegrationTests)$'
+  PackageNaming:
+    packagePattern: '[a-z]+(\.[a-z_][A-Za-z0-9_]*)*'
+
+style:
+  MaxLineLength:
+    active: false
+  ModifierOrder:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  ReturnCount:
+    excludeGuardClauses: true
+  ThrowsCount:
+    excludeGuardClauses: true
+  UnusedParameter:
+    allowedNames: 'ignored|expected|ignored.*'
+  WildcardImport:
+    active: false
+
+ktlint:
+  code_style: ktlint_official
+  Filename:
+    active: false
+  FinalNewline:
+    active: true
+  MaximumLineLength:
+    active: true
+    maxLineLength: 120
+  ModifierOrdering:
+    active: true
+  NoWildcardImports:
+    active: true
+  PackageName:
+    active: false
+  PropertyName:
+    active: false

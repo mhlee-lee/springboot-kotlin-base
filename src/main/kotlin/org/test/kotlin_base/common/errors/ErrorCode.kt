@@ -11,6 +11,5 @@ interface ErrorCode {
     fun getMessage(args: Array<Any>? = null) =
         MessageConverter.getMessage(label, args, CommonConstant.DEFAULT_LOCALE, label)
 
-    fun getMessage(args: Array<Any>? = null, locale: Locale) =
-        MessageConverter.getMessage(label, args, locale, label)
+    fun getMessage(args: Array<Any>? = null, locale: Locale) = MessageConverter.getMessage(label, args, locale, label)
 }

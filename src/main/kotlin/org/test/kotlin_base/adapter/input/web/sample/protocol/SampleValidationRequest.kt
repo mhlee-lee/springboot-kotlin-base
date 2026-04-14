@@ -21,12 +21,10 @@ data class SampleValidationRequest(
     @field:NotNull(message = "{SampleValidationRequest.validation.ttl}")
     val ttl: Int? = null,
 ) {
-    fun toCommand(): ValidateSampleCommand {
-        return ValidateSampleCommand(
-            quantity = requireNotNull(quantity),
-            name = requireNotNull(name),
-            requiredValue = requireNotNull(requiredValue),
-            code = requireNotNull(code),
-        )
-    }
+    fun toCommand(): ValidateSampleCommand = ValidateSampleCommand(
+        quantity = requireNotNull(quantity),
+        name = requireNotNull(name),
+        requiredValue = requireNotNull(requiredValue),
+        code = requireNotNull(code),
+    )
 }

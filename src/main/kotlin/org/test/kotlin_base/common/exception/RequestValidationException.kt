@@ -9,15 +9,4 @@ open class RequestValidationException(
     val errorCode: ErrorCode,
     val fieldErrors: List<ApiFieldError>,
     cause: Throwable? = null,
-) : RuntimeException(errorCode.getMessage(), cause) {
-    companion object {
-        fun single(
-            status: HttpStatus = HttpStatus.BAD_REQUEST,
-            errorCode: ErrorCode,
-            fieldError: ApiFieldError,
-            cause: Throwable? = null,
-        ): RequestValidationException {
-            return RequestValidationException(status, errorCode, listOf(fieldError), cause)
-        }
-    }
-}
+) : RuntimeException(errorCode.getMessage(), cause)

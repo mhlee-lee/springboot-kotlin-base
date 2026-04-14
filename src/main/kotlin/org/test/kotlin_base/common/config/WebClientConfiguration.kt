@@ -16,11 +16,9 @@ class WebClientConfiguration {
     }
 
     @Bean
-    fun webClientCustomizer(): WebClientCustomizer {
-        return WebClientCustomizer { builder ->
-            builder.codecs { configurer ->
-                configurer.defaultCodecs().maxInMemorySize(-1)
-            }
+    fun webClientCustomizer(): WebClientCustomizer = WebClientCustomizer { builder ->
+        builder.codecs { configurer ->
+            configurer.defaultCodecs().maxInMemorySize(-1)
         }
     }
 

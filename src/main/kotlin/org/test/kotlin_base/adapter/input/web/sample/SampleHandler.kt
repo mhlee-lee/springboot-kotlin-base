@@ -15,16 +15,13 @@ import org.test.kotlin_base.common.extensions.validateOrThrow
 import org.test.kotlin_base.domain.sample.model.Gender
 
 @Component
-class SampleHandler(
-    private val sampleUseCase: SampleUseCase,
-    private val validator: Validator,
-) {
-    suspend fun getSample(request: ServerRequest): ServerResponse {
+class SampleHandler(private val sampleUseCase: SampleUseCase, private val validator: Validator) {
+    suspend fun getSample(ignoredRequest: ServerRequest): ServerResponse {
         val result = sampleUseCase.getSamples()
         return ServerResponse.ok().bodyValueAndAwait(result)
     }
 
-    suspend fun addressScope(request: ServerRequest): ServerResponse {
+    suspend fun addressScope(ignoredRequest: ServerRequest): ServerResponse {
         val result = sampleUseCase.getAddressScopes()
         val response = result.map { AddressScopeResponse.byDomain(it) }
         return ServerResponse.ok().bodyValueAndAwait(response)
@@ -50,8 +47,8 @@ class SampleHandler(
                     gender = gender,
                     id = requestBody.id,
                     ttl = requestBody.ttl,
-                )
-            )
+                ),
+            ),
         )
 
         return ServerResponse.ok().bodyValueAndAwait(response)
@@ -63,7 +60,7 @@ class SampleHandler(
             ?: throw RequiredRequestBodyException()
 
         val response = SampleValidationResponse.from(
-            sampleUseCase.validateSample(requestBody.toCommand())
+            sampleUseCase.validateSample(requestBody.toCommand()),
         )
 
         return ServerResponse.ok().bodyValueAndAwait(response)

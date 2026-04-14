@@ -19,5 +19,4 @@ enum class CommonErrorCode(override val code: String, override val label: String
     INVALID_FORMAT("EKCP016", "common.CommonErrorCode.INVALID_FORMAT"),
     MISMATCH("EKCP017", "common.CommonErrorCode.MISMATCH"),
     INTERNAL_SERVER_ERROR("EKCP999", "common.CommonErrorCode.INTERNAL_SERVER_ERROR"),
-    ;
 }

@@ -1,6 +1,9 @@
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.DetektCreateBaselineTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("dev.detekt") version PluginVersions.DETEKT
     kotlin("jvm") version PluginVersions.KOTLIN
     kotlin("plugin.spring") version PluginVersions.KOTLIN
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
@@ -21,6 +24,15 @@ java {
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+configurations.matching { it.name.startsWith("detekt") }.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion("2.3.0")
+            because("detekt must run with the Kotlin compiler version it was built against")
+        }
     }
 }
 
@@ -53,6 +65,8 @@ dependencies {
 
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
+
+    detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper:${PluginVersions.DETEKT}")
 }
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
@@ -106,6 +120,30 @@ kotlin {
         )
         jvmTarget = JvmTarget.fromTarget(BuildVersions.JAVA.majorVersion)
     }
+}
+
+detekt {
+    toolVersion = PluginVersions.DETEKT
+    config.setFrom(files("$projectDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    parallel = true
+    basePath = projectDir
+}
+
+tasks.withType<Detekt>().configureEach {
+    jvmTarget = BuildVersions.JAVA.majorVersion
+    exclude("**/build/**", "**/generated-src/**")
+
+    reports {
+        checkstyle.required.set(true)
+        html.required.set(true)
+        markdown.required.set(true)
+        sarif.required.set(true)
+    }
+}
+
+tasks.withType<DetektCreateBaselineTask>().configureEach {
+    exclude("**/build/**", "**/generated-src/**")
 }
 
 tasks.withType<Test>().configureEach {

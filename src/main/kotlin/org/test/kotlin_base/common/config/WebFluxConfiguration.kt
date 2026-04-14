@@ -14,35 +14,24 @@ import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.test.kotlin_base.common.constant.CommonConstant
 
 @Configuration
-class WebFluxConfiguration(
-    private val messageSource: MessageSource,
-) : WebFluxConfigurer {
+class WebFluxConfiguration(private val messageSource: MessageSource) : WebFluxConfigurer {
     @Bean
-    fun messageCodesResolver(): MessageCodesResolver {
-        return DefaultMessageCodesResolver().apply {
-            setMessageCodeFormatter(DefaultMessageCodesResolver.Format.POSTFIX_ERROR_CODE)
-        }
+    fun messageCodesResolver(): MessageCodesResolver = DefaultMessageCodesResolver().apply {
+        setMessageCodeFormatter(DefaultMessageCodesResolver.Format.POSTFIX_ERROR_CODE)
     }
 
     @Bean
-    fun globalErrorAttributes(messageCodesResolver: MessageCodesResolver): ErrorAttributes {
-        return GlobalErrorAttributes(messageCodesResolver)
-    }
+    fun globalErrorAttributes(messageCodesResolver: MessageCodesResolver): ErrorAttributes =
+        GlobalErrorAttributes(messageCodesResolver)
 
     @Bean
-    fun applicationValidator(): LocalValidatorFactoryBean {
-        return LocalValidatorFactoryBean().apply {
-            setValidationMessageSource(messageSource)
-        }
+    fun applicationValidator(): LocalValidatorFactoryBean = LocalValidatorFactoryBean().apply {
+        setValidationMessageSource(messageSource)
     }
 
-    override fun getValidator(): Validator {
-        return applicationValidator()
-    }
+    override fun getValidator(): Validator = applicationValidator()
 
-    override fun getMessageCodesResolver(): MessageCodesResolver {
-        return messageCodesResolver()
-    }
+    override fun getMessageCodesResolver(): MessageCodesResolver = messageCodesResolver()
 
     override fun configureApiVersioning(configurer: ApiVersionConfigurer) {
         configurer

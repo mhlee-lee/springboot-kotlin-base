@@ -1,4 +1,5 @@
 object PluginVersions {
+    const val DETEKT = "2.0.0-alpha.2"
     const val KOTLIN = "2.3.20"
     const val SPRING_BOOT = "4.0.5"
     const val SPRING_DEPENDENCY_MANAGEMENT = "1.1.7"

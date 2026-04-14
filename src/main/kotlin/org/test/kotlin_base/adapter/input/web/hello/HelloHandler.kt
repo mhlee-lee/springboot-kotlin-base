@@ -7,11 +7,7 @@ import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.test.kotlin_base.application.port.input.hello.GetHelloUseCase
 
 @Component
-class HelloHandler(
-    private val getHelloUseCase: GetHelloUseCase,
-) {
-
-    suspend fun getHello(request: ServerRequest): ServerResponse {
-        return ServerResponse.ok().bodyValueAndAwait(getHelloUseCase.getHello())
-    }
+class HelloHandler(private val getHelloUseCase: GetHelloUseCase) {
+    suspend fun getHello(ignoredRequest: ServerRequest): ServerResponse =
+        ServerResponse.ok().bodyValueAndAwait(getHelloUseCase.getHello())
 }

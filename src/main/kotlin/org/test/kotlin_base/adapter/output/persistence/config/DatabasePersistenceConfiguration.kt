@@ -31,17 +31,13 @@ class DatabasePersistenceConfiguration {
     fun writeDataSource(
         @Qualifier("writeHikariConfig")
         writeHikariConfig: HikariConfig,
-    ): DataSource {
-        return HikariDataSource(writeHikariConfig)
-    }
+    ): DataSource = HikariDataSource(writeHikariConfig)
 
     @Bean("readDataSource")
     fun readDataSource(
         @Qualifier("readHikariConfig")
         readHikariConfig: HikariConfig,
-    ): DataSource {
-        return HikariDataSource(readHikariConfig)
-    }
+    ): DataSource = HikariDataSource(readHikariConfig)
 
     @Bean("dataSource")
     @Primary
@@ -50,33 +46,24 @@ class DatabasePersistenceConfiguration {
         writeDataSource: DataSource,
         @Qualifier("readDataSource")
         readDataSource: DataSource,
-    ): DataSource {
-        return LazyConnectionDataSourceProxy(writeDataSource).apply {
-            setReadOnlyDataSource(readDataSource)
-            setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
-        }
+    ): DataSource = LazyConnectionDataSourceProxy(writeDataSource).apply {
+        setReadOnlyDataSource(readDataSource)
+        setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     }
 
     @Bean("databaseCoroutineDispatcher", destroyMethod = "close")
-    fun databaseCoroutineDispatcher(): ExecutorCoroutineDispatcher {
-        return Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
-    }
+    fun databaseCoroutineDispatcher(): ExecutorCoroutineDispatcher =
+        Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
 
     @Bean("writeTransactionTemplate")
-    fun writeTransactionTemplate(
-        transactionManager: PlatformTransactionManager,
-    ): TransactionTemplate {
-        return TransactionTemplate(transactionManager).apply {
+    fun writeTransactionTemplate(transactionManager: PlatformTransactionManager): TransactionTemplate =
+        TransactionTemplate(transactionManager).apply {
             isReadOnly = false
         }
-    }
 
     @Bean("readTransactionTemplate")
-    fun readTransactionTemplate(
-        transactionManager: PlatformTransactionManager,
-    ): TransactionTemplate {
-        return TransactionTemplate(transactionManager).apply {
+    fun readTransactionTemplate(transactionManager: PlatformTransactionManager): TransactionTemplate =
+        TransactionTemplate(transactionManager).apply {
             isReadOnly = true
         }
-    }
 }

@@ -3,10 +3,7 @@ package org.test.kotlin_base.common.extensions
 /**
  * @author MooHee Lee
  */
-fun <T, A, B> Iterable<T>.unzipBy(
-    first: (T) -> A,
-    second: (T) -> B,
-): Pair<List<A>, List<B>> {
+fun <T, A, B> Iterable<T>.unzipBy(first: (T) -> A, second: (T) -> B): Pair<List<A>, List<B>> {
     val firstValues = mutableListOf<A>()
     val secondValues = mutableListOf<B>()
 

@@ -39,6 +39,9 @@ out/
 ### Kotlin ###
 .kotlin
 
+### Local Gradle cache ###
+.gradle-user-home/
+
 ### generated files ###
 /src/main/generated/
 

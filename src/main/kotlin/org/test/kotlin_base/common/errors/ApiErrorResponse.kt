@@ -9,11 +9,7 @@ data class ApiErrorResponse(
     val errors: List<ApiFieldError>? = null,
 )
 
-data class ApiFieldError(
-    val source: String,
-    val field: String,
-    val message: String,
-)
+data class ApiFieldError(val source: String, val field: String, val message: String)
 
 enum class ErrorSource(val wireName: String) {
     BODY("BODY"),

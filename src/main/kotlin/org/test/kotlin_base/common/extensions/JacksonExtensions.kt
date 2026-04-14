@@ -1,17 +1,17 @@
 package org.test.kotlin_base.common.extensions
 
-import tools.jackson.module.kotlin.jacksonTypeRef
 import org.test.kotlin_base.common.objectMapper
+import tools.jackson.module.kotlin.jacksonTypeRef
 
 fun Any?.toJsonOrNull(): String? = try {
     this?.let { objectMapper.writeValueAsString(it) }
-} catch (e: Exception) {
+} catch (ignored: Exception) {
     null
 }
 
 fun Any?.toJson(default: String): String = try {
     this?.let { objectMapper.writeValueAsString(this) } ?: default
-} catch (e: Exception) {
+} catch (ignored: Exception) {
     default
 }
 
@@ -19,13 +19,13 @@ fun Any.toJson(): String = objectMapper.writeValueAsString(this)
 
 inline fun <reified T> String?.toModelOrNull(): T? = try {
     this?.let { objectMapper.readValue(this, jacksonTypeRef<T>()) }
-} catch (e: Exception) {
+} catch (ignored: Exception) {
     null
 }
 
 inline fun <reified T> String?.toModel(default: T): T = try {
     this?.let { objectMapper.readValue(this, jacksonTypeRef<T>()) } ?: default
-} catch (e: Exception) {
+} catch (ignored: Exception) {
     default
 }
 

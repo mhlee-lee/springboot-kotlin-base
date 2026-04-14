@@ -26,15 +26,13 @@ class TraceIdWebFilter : WebFilter {
             }
     }
 
-    private fun resolveTraceId(request: ServerHttpRequest): String {
-        return request.headers.getFirst(TRACE_ID_HEADER)
+    private fun resolveTraceId(request: ServerHttpRequest): String = request.headers.getFirst(TRACE_ID_HEADER)
+        ?.takeIf { it.isNotBlank() }
+        ?: extractTraceIdFromTraceParent(request.headers.getFirst(TRACE_PARENT_HEADER))
+        ?: request.headers.getFirst(B3_TRACE_ID_HEADER)
             ?.takeIf { it.isNotBlank() }
-            ?: extractTraceIdFromTraceParent(request.headers.getFirst(TRACE_PARENT_HEADER))
-            ?: request.headers.getFirst(B3_TRACE_ID_HEADER)
-                ?.takeIf { it.isNotBlank() }
-                ?.lowercase()
-            ?: generateTraceId()
-    }
+            ?.lowercase()
+        ?: generateTraceId()
 
     private fun extractTraceIdFromTraceParent(traceParent: String?): String? {
         if (traceParent.isNullOrBlank()) {
@@ -50,9 +48,7 @@ class TraceIdWebFilter : WebFilter {
         return traceId.takeIf { TRACE_PARENT_TRACE_ID_REGEX.matches(it) }
     }
 
-    private fun generateTraceId(): String {
-        return UUID.randomUUID().toString().replace("-", "")
-    }
+    private fun generateTraceId(): String = UUID.randomUUID().toString().replace("-", "")
 
     companion object {
         const val TRACE_ID_ATTRIBUTE = "traceId"

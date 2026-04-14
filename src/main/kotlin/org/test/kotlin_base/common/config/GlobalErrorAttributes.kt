@@ -45,8 +45,8 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
     }
 
     // 순서 중요
-    private fun getErrorResult(error: Throwable, request: ServerRequest, locale: Locale): ApiErrorResponse {
-        return when (error) {
+    private fun getErrorResult(error: Throwable, request: ServerRequest, locale: Locale): ApiErrorResponse =
+        when (error) {
             is RequestValidationException -> handleRequestValidationException(error, request, locale)
             is DefaultException -> handleDefaultException(error, request, locale)
             is WebExchangeBindException -> handleWebExchangeBindException(error, request, locale)
@@ -57,21 +57,18 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             is ResponseStatusException -> handleResponseStatusException(error, request, locale)
             else -> handleUnknownException(request, locale)
         }
-    }
 
     private fun handleRequestValidationException(
         ex: RequestValidationException,
         request: ServerRequest,
         locale: Locale,
-    ): ApiErrorResponse {
-        return errorResponse(
-            status = ex.status,
-            errorCode = ex.errorCode,
-            request = request,
-            locale = locale,
-            errors = ex.fieldErrors,
-        )
-    }
+    ): ApiErrorResponse = errorResponse(
+        status = ex.status,
+        errorCode = ex.errorCode,
+        request = request,
+        locale = locale,
+        errors = ex.fieldErrors,
+    )
 
     private fun handleDefaultException(
         ex: DefaultException,
@@ -141,9 +138,10 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                         }.ifBlank { ErrorFieldNames.BODY },
                         message = rootCause.originalMessage
                             ?: CommonErrorCode.INVALID_FORMAT.getMessage(locale = locale),
-                    )
+                    ),
                 )
             }
+
             is MismatchedInputException -> {
                 errorCode = CommonErrorCode.MISMATCH
                 errors = listOf(
@@ -153,9 +151,10 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                             reference.propertyName ?: if (reference.index >= 0) "[${reference.index}]" else ""
                         }.ifBlank { ErrorFieldNames.BODY },
                         message = rootCause.originalMessage ?: CommonErrorCode.MISMATCH.getMessage(locale = locale),
-                    )
+                    ),
                 )
             }
+
             is JsonParseException -> {
                 errorCode = CommonErrorCode.JSON_PARSE_ERROR
                 errors = listOf(
@@ -163,9 +162,10 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
                         source = ErrorSource.BODY.wireName,
                         field = ErrorFieldNames.BODY,
                         message = CommonErrorCode.JSON_PARSE_ERROR.getMessage(locale = locale),
-                    )
+                    ),
                 )
             }
+
             else -> {
                 errorCode = CommonErrorCode.BAD_REQUEST
                 errors = null
@@ -245,32 +245,28 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         )
     }
 
-    private fun handleInvalidMediaTypeException(request: ServerRequest, locale: Locale): ApiErrorResponse {
-        return errorResponse(
+    private fun handleInvalidMediaTypeException(request: ServerRequest, locale: Locale): ApiErrorResponse =
+        errorResponse(
             status = HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             errorCode = CommonErrorCode.UNSUPPORTED_MEDIA_TYPE,
             request = request,
             locale = locale,
         )
-    }
 
-    private fun handleDataBufferLimitException(request: ServerRequest, locale: Locale): ApiErrorResponse {
-        return errorResponse(
+    private fun handleDataBufferLimitException(request: ServerRequest, locale: Locale): ApiErrorResponse =
+        errorResponse(
             status = HttpStatus.PAYLOAD_TOO_LARGE,
             errorCode = CommonErrorCode.PAYLOAD_TOO_LARGE,
             request = request,
             locale = locale,
         )
-    }
 
-    private fun handleUnknownException(request: ServerRequest, locale: Locale): ApiErrorResponse {
-        return errorResponse(
-            status = HttpStatus.INTERNAL_SERVER_ERROR,
-            errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR,
-            request = request,
-            locale = locale,
-        )
-    }
+    private fun handleUnknownException(request: ServerRequest, locale: Locale): ApiErrorResponse = errorResponse(
+        status = HttpStatus.INTERNAL_SERVER_ERROR,
+        errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR,
+        request = request,
+        locale = locale,
+    )
 
     private fun errorResponse(
         status: HttpStatus,
@@ -279,34 +275,29 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         locale: Locale,
         message: String = errorCode.getMessage(locale = locale),
         errors: List<ApiFieldError>? = null,
-    ): ApiErrorResponse {
-        return ApiErrorResponse(
-            status = status.value(),
-            code = errorCode.code,
-            message = message,
-            path = request.path(),
-            traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
-                ?: request.exchange().request.id,
-            errors = errors,
-        )
-    }
+    ): ApiErrorResponse = ApiErrorResponse(
+        status = status.value(),
+        code = errorCode.code,
+        message = message,
+        path = request.path(),
+        traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
+            ?: request.exchange().request.id,
+        errors = errors,
+    )
 
     // validation 어노테이션에서 속성값 추출
-    private fun extractConstraintArguments(annotation: Annotation): Array<Any> {
-        return when (annotation) {
-            is Range -> arrayOf(annotation.min, annotation.max)
-            is Size -> arrayOf(annotation.min, annotation.max)
-            is Min -> arrayOf(annotation.value)
-            is Max -> arrayOf(annotation.value)
-            is DecimalMin -> arrayOf(annotation.value)
-            is DecimalMax -> arrayOf(annotation.value)
-            is Pattern -> arrayOf(annotation.regexp)
-            else -> emptyArray()
-        }
+    private fun extractConstraintArguments(annotation: Annotation): Array<Any> = when (annotation) {
+        is Range -> arrayOf(annotation.min, annotation.max)
+        is Size -> arrayOf(annotation.min, annotation.max)
+        is Min -> arrayOf(annotation.value)
+        is Max -> arrayOf(annotation.value)
+        is DecimalMin -> arrayOf(annotation.value)
+        is DecimalMax -> arrayOf(annotation.value)
+        is Pattern -> arrayOf(annotation.regexp)
+        else -> emptyArray()
     }
 
-    private fun extractLeafFieldName(propertyPath: String): String {
-        return propertyPath.substringAfterLast('.').ifBlank { propertyPath }
+    private fun extractLeafFieldName(propertyPath: String): String = propertyPath.substringAfterLast('.').ifBlank {
+        propertyPath
     }
-
 }

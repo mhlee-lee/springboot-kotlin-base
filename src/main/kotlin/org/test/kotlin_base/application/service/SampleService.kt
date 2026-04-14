@@ -42,22 +42,18 @@ class SampleService(
         return readAddressScopes
     }
 
-    override suspend fun putSample(command: PutSampleCommand): PutSampleResult {
-        return PutSampleResult(
-            name = command.name,
-            age = command.age,
-            gender = command.gender,
-            id = command.id,
-            ttl = command.ttl,
-        )
-    }
+    override suspend fun putSample(command: PutSampleCommand): PutSampleResult = PutSampleResult(
+        name = command.name,
+        age = command.age,
+        gender = command.gender,
+        id = command.id,
+        ttl = command.ttl,
+    )
 
-    override suspend fun validateSample(command: ValidateSampleCommand): ValidateSampleResult {
-        return ValidateSampleResult(
-            quantity = command.quantity,
-            name = command.name,
-            requiredValue = command.requiredValue,
-            code = command.code,
-        )
-    }
+    override suspend fun validateSample(command: ValidateSampleCommand): ValidateSampleResult = ValidateSampleResult(
+        quantity = command.quantity,
+        name = command.name,
+        requiredValue = command.requiredValue,
+        code = command.code,
+    )
 }

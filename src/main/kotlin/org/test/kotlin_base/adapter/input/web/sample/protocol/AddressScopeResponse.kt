@@ -13,15 +13,13 @@ data class AddressScopeResponse(
     val updated: LocalDateTime,
 ) {
     companion object {
-        fun byDomain(addressScope: AddressScope): AddressScopeResponse {
-            return AddressScopeResponse(
-                id = addressScope.id,
-                vpcId = addressScope.vpcId,
-                status = addressScope.status,
-                addressType = addressScope.addressType,
-                created = addressScope.created,
-                updated = addressScope.updated,
-            )
-        }
+        fun byDomain(addressScope: AddressScope): AddressScopeResponse = AddressScopeResponse(
+            id = addressScope.id,
+            vpcId = addressScope.vpcId,
+            status = addressScope.status,
+            addressType = addressScope.addressType,
+            created = addressScope.created,
+            updated = addressScope.updated,
+        )
     }
 }
