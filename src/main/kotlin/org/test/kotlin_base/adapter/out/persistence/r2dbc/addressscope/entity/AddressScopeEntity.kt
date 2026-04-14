@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import org.test.kotlin_base.domain.addressscope.model.AddressScope
+import org.test.kotlin_base.domain.addressscope.model.AddressType
 import java.time.LocalDateTime
 
 @Table("address_scopes")
@@ -28,7 +29,7 @@ fun AddressScopeEntity.toDomain(): AddressScope {
         id = id,
         vpcId = vpcId,
         status = status,
-        addressType = addressType.toDomainEnum(),
+        addressType = addressType,
         created = created,
         updated = updated,
     )

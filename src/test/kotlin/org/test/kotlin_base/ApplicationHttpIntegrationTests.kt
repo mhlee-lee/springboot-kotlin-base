@@ -49,7 +49,12 @@ class ApplicationHttpIntegrationTests {
             .uri("/sample/$API_VERSION_V1/addressScope")
             .exchange()
             .expectStatus().isOk
-            .expectBody().isEmpty
+            .expectBody()
+            .jsonPath("$").isArray
+            .jsonPath("$[0].id").isEqualTo("scope-1")
+            .jsonPath("$[0].addressType").isEqualTo("RESIDENTIAL")
+            .jsonPath("$[1].id").isEqualTo("scope-2")
+            .jsonPath("$[1].addressType").isEqualTo("COMMERCIAL")
     }
 
     @Test

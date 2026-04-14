@@ -12,12 +12,15 @@ import org.springframework.boot.r2dbc.autoconfigure.R2dbcProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.r2dbc.convert.R2dbcCustomConversions
+import org.springframework.data.r2dbc.dialect.DialectResolver
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.r2dbc.connection.R2dbcTransactionManager
 import org.springframework.r2dbc.connection.lookup.AbstractRoutingConnectionFactory
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.support.DefaultTransactionDefinition
+import org.test.kotlin_base.KotlinBaseApplication
 import reactor.core.publisher.Mono
 
 enum class DatabaseRoute {
@@ -92,6 +95,19 @@ class R2dbcConfiguration {
         return RoutingConnectionFactory(
             writeConnectionFactory = writeConnectionFactory,
             readConnectionFactory = readConnectionFactory,
+        )
+    }
+
+    @Bean
+    fun r2dbcCustomConversions(
+        @Qualifier("writeConnectionFactory") writeConnectionFactory: ConnectionFactory,
+    ): R2dbcCustomConversions {
+        val dialect = DialectResolver.getDialect(writeConnectionFactory)
+        val basePackage = KotlinBaseApplication::class.java.packageName
+        val readingConverters = GenericEnumConverterFactory.scanReadingConverters(basePackage)
+        return R2dbcCustomConversions.of(
+            dialect,
+            listOf(GenericEnumConverterFactory.GenericEnumWritingConverter) + readingConverters,
         )
     }
 
