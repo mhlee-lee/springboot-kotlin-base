@@ -1,7 +1,7 @@
 package org.test.kotlin_base.application.service
 
 import org.springframework.stereotype.Service
-import org.test.kotlin_base.application.port.`in`.hello.GetHelloUseCase
+import org.test.kotlin_base.application.port.input.hello.GetHelloUseCase
 
 @Service
 class HelloService : GetHelloUseCase {

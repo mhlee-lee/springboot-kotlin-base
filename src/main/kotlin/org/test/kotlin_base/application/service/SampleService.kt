@@ -2,14 +2,14 @@ package org.test.kotlin_base.application.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.test.kotlin_base.application.port.`in`.sample.SampleUseCase
-import org.test.kotlin_base.application.port.`in`.sample.model.PutSampleCommand
-import org.test.kotlin_base.application.port.`in`.sample.model.PutSampleResult
-import org.test.kotlin_base.application.port.`in`.sample.model.ValidateSampleCommand
-import org.test.kotlin_base.application.port.`in`.sample.model.ValidateSampleResult
-import org.test.kotlin_base.application.port.out.addressscope.LoadAddressScopePort
-import org.test.kotlin_base.application.port.out.sample.LoadSamplePort
-import org.test.kotlin_base.application.port.out.transaction.TransactionalPort
+import org.test.kotlin_base.application.port.input.sample.SampleUseCase
+import org.test.kotlin_base.application.port.input.sample.model.PutSampleCommand
+import org.test.kotlin_base.application.port.input.sample.model.PutSampleResult
+import org.test.kotlin_base.application.port.input.sample.model.ValidateSampleCommand
+import org.test.kotlin_base.application.port.input.sample.model.ValidateSampleResult
+import org.test.kotlin_base.application.port.output.addressscope.LoadAddressScopePort
+import org.test.kotlin_base.application.port.output.sample.LoadSamplePort
+import org.test.kotlin_base.application.port.output.transaction.TransactionalPort
 import org.test.kotlin_base.common.extensions.toJson
 import org.test.kotlin_base.domain.addressscope.model.AddressScope
 import org.test.kotlin_base.domain.sample.model.Sample

@@ -1,0 +1,63 @@
+package org.test.kotlin_base.adapter.output.transaction
+
+import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Component
+import org.springframework.transaction.support.TransactionTemplate
+import org.test.kotlin_base.application.port.output.transaction.TransactionalPort
+import kotlin.coroutines.CoroutineContext
+
+@Component
+class TransactionalExecutorAdapter(
+    @Qualifier("databaseCoroutineDispatcher")
+    private val databaseCoroutineDispatcher: CoroutineContext,
+    @Qualifier("writeTransactionTemplate")
+    private val writeTransactionTemplate: TransactionTemplate,
+    @Qualifier("readTransactionTemplate")
+    private val readTransactionTemplate: TransactionTemplate,
+) : TransactionalPort {
+    private val log = LoggerFactory.getLogger(this::class.java)
+
+    private object UninitializedResult
+
+    override suspend fun <T> execute(block: () -> T): T {
+        return runInTransaction(
+            transactionTemplate = writeTransactionTemplate,
+            readOnly = false,
+            block = block,
+        )
+    }
+
+    override suspend fun <T> executeReadOnly(block: () -> T): T {
+        return runInTransaction(
+            transactionTemplate = readTransactionTemplate,
+            readOnly = true,
+            block = block,
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun <T> runInTransaction(
+        transactionTemplate: TransactionTemplate,
+        readOnly: Boolean,
+        block: () -> T,
+    ): T {
+        return withContext(databaseCoroutineDispatcher) {
+            // Spring JDBC transaction state is thread-bound, so the whole callback must stay on one virtual thread.
+            log.debug(
+                "runInTransaction() - readOnly={}, thread={}, virtual={}",
+                readOnly,
+                Thread.currentThread().name,
+                Thread.currentThread().isVirtual,
+            )
+
+            var result: Any? = UninitializedResult
+            transactionTemplate.execute {
+                result = block()
+            }
+
+            result as T
+        }
+    }
+}
