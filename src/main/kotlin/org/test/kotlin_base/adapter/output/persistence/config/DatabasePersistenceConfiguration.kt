@@ -2,7 +2,6 @@ package org.test.kotlin_base.adapter.output.persistence.config
 
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
@@ -21,18 +20,17 @@ class DatabasePersistenceConfiguration {
     fun writeTransactionTemplate(
         transactionManager: PlatformTransactionManager,
     ): TransactionTemplate {
-        return transactionTemplate(transactionManager, readOnly = false)
+        return createTransactionTemplate(transactionManager, readOnly = false)
     }
 
     @Bean("readTransactionTemplate")
     fun readTransactionTemplate(
         transactionManager: PlatformTransactionManager,
     ): TransactionTemplate {
-        return transactionTemplate(transactionManager, readOnly = true)
+        return createTransactionTemplate(transactionManager, readOnly = true)
     }
 
-    private fun transactionTemplate(
-        @Qualifier("transactionManager")
+    private fun createTransactionTemplate(
         transactionManager: PlatformTransactionManager,
         readOnly: Boolean,
     ): TransactionTemplate {

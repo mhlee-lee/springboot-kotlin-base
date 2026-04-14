@@ -6,7 +6,11 @@ import org.springframework.web.reactive.function.server.*
 import org.test.kotlin_base.adapter.input.web.sample.protocol.*
 import org.test.kotlin_base.application.port.input.sample.SampleUseCase
 import org.test.kotlin_base.application.port.input.sample.model.PutSampleCommand
-import org.test.kotlin_base.common.exception.*
+import org.test.kotlin_base.common.exception.InvalidEnumPathParameterException
+import org.test.kotlin_base.common.exception.InvalidHeaderValueException
+import org.test.kotlin_base.common.exception.RequiredQueryParameterException
+import org.test.kotlin_base.common.exception.RequiredRequestBodyException
+import org.test.kotlin_base.common.extensions.headerOrThrow
 import org.test.kotlin_base.common.extensions.validateOrThrow
 import org.test.kotlin_base.domain.sample.model.Gender
 
@@ -27,9 +31,7 @@ class SampleHandler(
     }
 
     suspend fun putSample(request: ServerRequest): ServerResponse {
-        val rawAge = request.headers().firstHeader("age")
-            ?: throw RequiredHeaderException("age")
-        val age = rawAge.toIntOrNull()
+        val age = request.headerOrThrow("age").toIntOrNull()
             ?: throw InvalidHeaderValueException("age")
         val name = request.queryParamOrNull("name")
             ?: throw RequiredQueryParameterException("name")
