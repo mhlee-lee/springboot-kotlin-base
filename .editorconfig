@@ -50,9 +50,12 @@ ij_kotlin_allow_trailing_comma = true
 # Call site: 개발자 재량 (Kotlin style guide), IntelliJ 기본값 = false
 ij_kotlin_allow_trailing_comma_on_call_site = false
 
-# --- ktlint 규칙 활성화/비활성화는 detekt.yml 에서 관리 -------------------------
-# detekt ktlint wrapper는 .editorconfig 의 ktlint_standard_* 속성을 읽지 않음
-# → detekt.yml 의 ktlint 섹션에서 active: true/false 로 제어
+# --- ktlint 규칙 활성화/비활성화 ------------------------------------------------
+# IntelliJ ktlint 플러그인용 (detekt.yml 의 ktlint 섹션과 동일하게 유지)
+# NoWildcardImports: IntelliJ는 star import 임계값(5)을 사용하므로 비활성화
+ktlint_standard_no-wildcard-imports = disabled
+# Filename: Spring 등 프레임워크에서 파일명 규칙이 다를 수 있어 비활성화
+ktlint_standard_filename = disabled
 
 # -----------------------------------------------------------------------------
 # YAML
