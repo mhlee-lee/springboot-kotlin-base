@@ -1,68 +1,74 @@
 package com.example.skeleton.adapter.input.web.sample
 
-import com.example.skeleton.adapter.input.web.sample.protocol.*
+import com.example.skeleton.adapter.input.web.sample.protocol.CreateSampleRequest
+import com.example.skeleton.adapter.input.web.sample.protocol.SampleResponse
+import com.example.skeleton.adapter.input.web.sample.protocol.SampleSearchRequest
+import com.example.skeleton.adapter.input.web.sample.protocol.UpdateSampleRequest
 import com.example.skeleton.application.port.input.sample.SampleUseCase
-import com.example.skeleton.application.port.input.sample.model.PutSampleCommand
-import com.example.skeleton.common.exception.InvalidEnumPathParameterException
-import com.example.skeleton.common.exception.InvalidHeaderValueException
-import com.example.skeleton.common.exception.RequiredQueryParameterException
+import com.example.skeleton.common.exception.InvalidPathParameterException
 import com.example.skeleton.common.exception.RequiredRequestBodyException
+import com.example.skeleton.common.extensions.awaitBodyValidated
+import com.example.skeleton.common.extensions.bindQueryParams
 import com.example.skeleton.common.extensions.headerOrThrow
 import com.example.skeleton.common.extensions.validateOrThrow
-import com.example.skeleton.domain.sample.model.Gender
 import jakarta.validation.Validator
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 
 @Component
 class SampleHandler(private val sampleUseCase: SampleUseCase, private val validator: Validator) {
-    suspend fun getSample(ignoredRequest: ServerRequest): ServerResponse {
-        val result = sampleUseCase.getSamples()
-        return ServerResponse.ok().bodyValueAndAwait(result)
+
+    // ── GET /samples?name=...&minAge=...&maxAge=... ──────────────────────────
+    // QueryParam → model 바인딩 (bindQueryParams) + validation 예시
+    suspend fun searchSamples(request: ServerRequest): ServerResponse {
+        val searchRequest = request.bindQueryParams<SampleSearchRequest>()
+        validator.validateOrThrow(searchRequest)
+
+        val result = sampleUseCase.searchSamples(searchRequest.toQuery())
+        return ServerResponse.ok().bodyValueAndAwait(result.map(SampleResponse::from))
     }
 
-    suspend fun addressScope(ignoredRequest: ServerRequest): ServerResponse {
-        val result = sampleUseCase.getAddressScopes()
-        val response = result.map { AddressScopeResponse.byDomain(it) }
-        return ServerResponse.ok().bodyValueAndAwait(response)
+    // ── GET /samples/{id} ────────────────────────────────────────────────────
+    // PathVariable 예시 + 존재하지 않으면 404 에러 응답
+    suspend fun getSample(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+            ?: throw InvalidPathParameterException("id")
+
+        val result = sampleUseCase.getSample(id)
+        return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
     }
 
-    suspend fun putSample(request: ServerRequest): ServerResponse {
-        val age = request.headerOrThrow("age").toIntOrNull()
-            ?: throw InvalidHeaderValueException("age")
-        val name = request.queryParamOrNull("name")
-            ?: throw RequiredQueryParameterException("name")
-        val gender = request.pathVariableOrNull("gender")
-            ?.let { raw -> runCatching { enumValueOf<Gender>(raw) }.getOrNull() }
-            ?: throw InvalidEnumPathParameterException("gender")
-        val requestBody = request.awaitBodyOrNull<SampleRequest>()
+    // ── POST /samples ────────────────────────────────────────────────────────
+    // Body → model + validation 예시 (awaitBodyValidated)
+    suspend fun createSample(request: ServerRequest): ServerResponse {
+        val body = request.awaitBodyValidated<CreateSampleRequest>(validator)
+
+        val result = sampleUseCase.createSample(body.toCommand())
+        return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
+    }
+
+    // ── PUT /samples/{id} ────────────────────────────────────────────────────
+    // PathVariable + Header + Body validation 종합 예시
+    suspend fun updateSample(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+            ?: throw InvalidPathParameterException("id")
+        val modifiedBy = request.headerOrThrow("X-Modified-By")
+        val body = request.awaitBodyOrNull<UpdateSampleRequest>()
             ?.let(validator::validateOrThrow)
             ?: throw RequiredRequestBodyException()
 
-        val response = SampleResponse.from(
-            sampleUseCase.putSample(
-                PutSampleCommand(
-                    name = name,
-                    age = age,
-                    gender = gender,
-                    id = requestBody.id,
-                    ttl = requestBody.ttl,
-                ),
-            ),
-        )
-
-        return ServerResponse.ok().bodyValueAndAwait(response)
+        val command = body.toCommand(id, modifiedBy)
+        val result = sampleUseCase.updateSample(command)
+        return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
     }
 
-    suspend fun validateSample(request: ServerRequest): ServerResponse {
-        val requestBody = request.awaitBodyOrNull<SampleValidationRequest>()
-            ?.let(validator::validateOrThrow)
-            ?: throw RequiredRequestBodyException()
+    // ── DELETE /samples/{id} ─────────────────────────────────────────────────
+    // PathVariable + 존재하지 않으면 404 에러 응답
+    suspend fun deleteSample(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+            ?: throw InvalidPathParameterException("id")
 
-        val response = SampleValidationResponse.from(
-            sampleUseCase.validateSample(requestBody.toCommand()),
-        )
-
-        return ServerResponse.ok().bodyValueAndAwait(response)
+        sampleUseCase.deleteSample(id)
+        return ServerResponse.noContent().buildAndAwait()
     }
 }

@@ -3,7 +3,7 @@ spring:
     write:
       hikari:
         pool-name: write-test-hikari-pool
-        jdbc-url: jdbc:h2:mem:kotlinbase-write-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        jdbc-url: jdbc:h2:mem:kotlinbase-write-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=RUNSCRIPT FROM 'classpath:db/schema.sql'
         username: sa
         password:
         driver-class-name: org.h2.Driver
@@ -12,7 +12,7 @@ spring:
     read:
       hikari:
         pool-name: read-test-hikari-pool
-        jdbc-url: jdbc:h2:mem:kotlinbase-read-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        jdbc-url: jdbc:h2:mem:kotlinbase-read-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=RUNSCRIPT FROM 'classpath:db/schema.sql'
         username: sa
         password:
         driver-class-name: org.h2.Driver

@@ -18,6 +18,14 @@ naming:
     packagePattern: '[a-z]+(\.[a-z][a-z0-9]*)*'
 
 style:
+  MagicNumber:
+    ignoreAnnotated:
+      - 'Min'
+      - 'Max'
+      - 'Range'
+      - 'Size'
+      - 'DecimalMin'
+      - 'DecimalMax'
   # detekt 고유 규칙 비활성화 → ktlint 규칙으로 단일화 (.editorconfig 설정)
   MaxLineLength:
     active: false

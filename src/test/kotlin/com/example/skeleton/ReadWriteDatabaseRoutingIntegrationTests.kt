@@ -41,14 +41,17 @@ class ReadWriteDatabaseRoutingIntegrationTests {
         writeJdbcTemplate = JdbcTemplate(writeDataSource)
         readJdbcTemplate = JdbcTemplate(readDataSource)
 
-        seedSampleData()
-        seedAddressScopeData()
+        writeJdbcTemplate.update("DELETE FROM samples")
+        readJdbcTemplate.update("DELETE FROM samples")
+
+        writeJdbcTemplate.update("INSERT INTO samples (name, age) VALUES ('writer-only', 11)")
+        readJdbcTemplate.update("INSERT INTO samples (name, age) VALUES ('reader-only', 22)")
     }
 
     @Test
-    fun `sample endpoint reads from read database`() {
+    fun `GET samples reads from read database`() {
         webTestClient.get()
-            .uri("/sample/$API_VERSION_V1/sample")
+            .uri("/sample/$API_VERSION_V1/samples")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -56,62 +59,5 @@ class ReadWriteDatabaseRoutingIntegrationTests {
             .jsonPath("$[0].name").isEqualTo("reader-only")
             .jsonPath("$[0].age").isEqualTo(22)
             .jsonPath("$[1]").doesNotExist()
-    }
-
-    @Test
-    fun `address scope endpoint reads from read database`() {
-        webTestClient.get()
-            .uri("/sample/$API_VERSION_V1/addressScope")
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$").isArray
-            .jsonPath("$[0].id").isEqualTo("scope-read")
-            .jsonPath("$[0].addressType").isEqualTo("COMMERCIAL")
-            .jsonPath("$[1]").doesNotExist()
-    }
-
-    private fun seedSampleData() {
-        writeJdbcTemplate.update("delete from my_table1")
-        readJdbcTemplate.update("delete from my_table1")
-
-        writeJdbcTemplate.update(
-            "insert into my_table1 (name, age) values (?, ?)",
-            "writer-only",
-            11,
-        )
-
-        readJdbcTemplate.update(
-            "insert into my_table1 (name, age) values (?, ?)",
-            "reader-only",
-            22,
-        )
-    }
-
-    private fun seedAddressScopeData() {
-        writeJdbcTemplate.update("delete from address_scopes")
-        readJdbcTemplate.update("delete from address_scopes")
-
-        writeJdbcTemplate.update(
-            """
-            insert into address_scopes (id, vpc_id, status, address_type, created_at, updated_at)
-            values (?, ?, ?, ?, current_timestamp, current_timestamp)
-            """.trimIndent(),
-            "scope-write",
-            "vpc-write",
-            1,
-            "ATEN0001",
-        )
-
-        readJdbcTemplate.update(
-            """
-            insert into address_scopes (id, vpc_id, status, address_type, created_at, updated_at)
-            values (?, ?, ?, ?, current_timestamp, current_timestamp)
-            """.trimIndent(),
-            "scope-read",
-            "vpc-read",
-            0,
-            "ATEN0002",
-        )
     }
 }

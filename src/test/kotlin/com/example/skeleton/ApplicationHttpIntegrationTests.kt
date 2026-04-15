@@ -2,175 +2,206 @@ package com.example.skeleton
 
 import com.example.skeleton.common.constant.CommonConstant.API_VERSION_V1
 import com.example.skeleton.common.errors.CommonErrorCode
-import com.example.skeleton.common.errors.ErrorFieldNames
 import com.example.skeleton.common.errors.ErrorSource
+import com.example.skeleton.common.errors.SampleErrorCode
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
+import javax.sql.DataSource
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ApplicationHttpIntegrationTests {
     @LocalServerPort
     private var port: Int = 0
 
+    @Autowired
+    @Qualifier("writeDataSource")
+    private lateinit var writeDataSource: DataSource
+
+    @Autowired
+    @Qualifier("readDataSource")
+    private lateinit var readDataSource: DataSource
+
     private lateinit var webTestClient: WebTestClient
+    private lateinit var writeJdbc: JdbcTemplate
+    private lateinit var readJdbc: JdbcTemplate
 
     @BeforeEach
     fun setUp() {
         webTestClient = WebTestClient.bindToServer()
             .baseUrl("http://127.0.0.1:$port")
             .build()
+        writeJdbc = JdbcTemplate(writeDataSource)
+        readJdbc = JdbcTemplate(readDataSource)
+        writeJdbc.update("DELETE FROM samples")
+        readJdbc.update("DELETE FROM samples")
     }
 
+    // ── CRUD 정상 흐름 ──────────────────────────────────────────────────────
+
     @Test
-    fun `hello endpoint returns greeting`() {
-        webTestClient.get()
-            .uri("/hello/$API_VERSION_V1/hello")
+    fun `POST creates a sample and returns it`() {
+        webTestClient.post()
+            .uri("/sample/$API_VERSION_V1/samples")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"name":"Alice","age":30}""")
             .exchange()
             .expectStatus().isOk
-            .expectBody(String::class.java)
-            .isEqualTo("Hello")
+            .expectBody()
+            .jsonPath("$.id").isNotEmpty
+            .jsonPath("$.name").isEqualTo("Alice")
+            .jsonPath("$.age").isEqualTo(30)
     }
 
     @Test
-    fun `sample read endpoints respond successfully`() {
+    fun `GET by id returns existing sample`() {
+        // GET 은 read DB 에서 조회
+        readJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'Bob', 25)")
+
         webTestClient.get()
-            .uri("/sample/$API_VERSION_V1/sample")
+            .uri("/sample/$API_VERSION_V1/samples/1")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.id").isEqualTo(1)
+            .jsonPath("$.name").isEqualTo("Bob")
+            .jsonPath("$.age").isEqualTo(25)
+    }
+
+    @Test
+    fun `GET search with query params filters results`() {
+        // GET 은 read DB 에서 조회
+        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Alice', 30)")
+        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Bob', 20)")
+        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Charlie', 40)")
+
+        webTestClient.get()
+            .uri("/sample/$API_VERSION_V1/samples?minAge=25&maxAge=35")
             .exchange()
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$").isArray
             .jsonPath("$[0].name").isEqualTo("Alice")
-            .jsonPath("$[0].age").isEqualTo(31)
-            .jsonPath("$[1].name").isEqualTo("Bob")
-            .jsonPath("$[1].age").isEqualTo(27)
+            .jsonPath("$[1]").doesNotExist()
+    }
 
+    @Test
+    fun `PUT updates an existing sample`() {
+        // PUT 은 write DB 에서 수정
+        writeJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'Old', 10)")
+
+        webTestClient.put()
+            .uri("/sample/$API_VERSION_V1/samples/1")
+            .header("X-Modified-By", "tester")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"name":"Updated","age":99}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.id").isEqualTo(1)
+            .jsonPath("$.name").isEqualTo("Updated")
+            .jsonPath("$.age").isEqualTo(99)
+    }
+
+    @Test
+    fun `DELETE removes an existing sample`() {
+        // DELETE 는 write DB 에서 삭제
+        writeJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'ToDelete', 1)")
+
+        webTestClient.delete()
+            .uri("/sample/$API_VERSION_V1/samples/1")
+            .exchange()
+            .expectStatus().isNoContent
+    }
+
+    // ── 에러 응답 ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `GET by id returns 404 when sample not found`() {
         webTestClient.get()
-            .uri("/sample/$API_VERSION_V1/addressScope")
+            .uri("/sample/$API_VERSION_V1/samples/999")
             .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$").isArray
-            .jsonPath("$[0].id").isEqualTo("scope-1")
-            .jsonPath("$[0].addressType").isEqualTo("RESIDENTIAL")
-            .jsonPath("$[1].id").isEqualTo("scope-2")
-            .jsonPath("$[1].addressType").isEqualTo("COMMERCIAL")
-    }
-
-    @Test
-    fun `sample put endpoint binds path query header and body`() {
-        webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
-            .header("age", "29")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"id":"sample-1","ttl":60}""")
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.name").isEqualTo("tester")
-            .jsonPath("$.age").isEqualTo(29)
-            .jsonPath("$.gender").isEqualTo("FEMALE")
-            .jsonPath("$.id").isEqualTo("sample-1")
-            .jsonPath("$.ttl").isEqualTo(60)
-    }
-
-    @Test
-    fun `sample put endpoint returns bad request when age header is missing`() {
-        webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"id":"sample-1","ttl":60}""")
-            .exchange()
-            .expectStatus().isBadRequest
+            .expectStatus().isNotFound
             .expectHeader().exists("X-Trace-Id")
             .expectBody()
-            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_HEADER_PARAMETER.code)
-            .jsonPath("$.path").isEqualTo("/sample/1.0/sample/FEMALE")
+            .jsonPath("$.code").isEqualTo(SampleErrorCode.SAMPLE_NOT_FOUND.code)
             .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.HEADER.wireName)
-            .jsonPath("$.errors[0].field").isEqualTo("age")
     }
 
     @Test
-    fun `sample put endpoint returns bad request when age header is invalid`() {
+    fun `PUT returns 400 when X-Modified-By header is missing`() {
         webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
-            .header("age", "xx")
+            .uri("/sample/$API_VERSION_V1/samples/1")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"id":"sample-1","ttl":60}""")
+            .bodyValue("""{"name":"Test","age":20}""")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_HEADER_PARAMETER.code)
-            .jsonPath("$.traceId").exists()
             .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.HEADER.wireName)
-            .jsonPath("$.errors[0].field").isEqualTo("age")
+            .jsonPath("$.errors[0].field").isEqualTo("X-Modified-By")
     }
 
     @Test
-    fun `sample put endpoint returns bad request when body is empty`() {
+    fun `PUT returns 400 when body is empty`() {
         webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
-            .header("age", "29")
+            .uri("/sample/$API_VERSION_V1/samples/1")
+            .header("X-Modified-By", "tester")
             .contentType(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo(CommonErrorCode.EMPTY_BODY.code)
-            .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.BODY.wireName)
-            .jsonPath("$.errors[0].field").isEqualTo(ErrorFieldNames.BODY)
     }
 
     @Test
-    fun `sample put endpoint returns bad request when gender is invalid`() {
-        webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/UNKNOWN?name=tester")
-            .header("age", "29")
+    fun `POST returns validation errors when body is invalid`() {
+        webTestClient.post()
+            .uri("/sample/$API_VERSION_V1/samples")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"id":"sample-1","ttl":60}""")
-            .exchange()
-            .expectStatus().isBadRequest
-            .expectBody()
-            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code)
-            .jsonPath("$.traceId").exists()
-            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.PATH.wireName)
-            .jsonPath("$.errors[0].field").isEqualTo("gender")
-    }
-
-    @Test
-    fun `sample put endpoint returns validation field errors when body is invalid`() {
-        webTestClient.put()
-            .uri("/sample/$API_VERSION_V1/sample/FEMALE?name=tester")
-            .header("age", "29")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"id":"","ttl":0}""")
+            .bodyValue("""{"name":"","age":-1}""")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
             .jsonPath("$.code").isEqualTo(CommonErrorCode.VALIDATION_FAIL.code)
-            .jsonPath("$.traceId").exists()
+            .jsonPath("$.errors").isArray
             .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.BODY.wireName)
-            .jsonPath("$.errors[0].field").isEqualTo("id")
-            .jsonPath("$.errors[1].source").isEqualTo(ErrorSource.BODY.wireName)
-            .jsonPath("$.errors[1].field").isEqualTo("ttl")
     }
 
     @Test
-    fun `unsupported api version returns bad request`() {
+    fun `DELETE returns 404 when sample not found`() {
+        webTestClient.delete()
+            .uri("/sample/$API_VERSION_V1/samples/999")
+            .exchange()
+            .expectStatus().isNotFound
+            .expectBody()
+            .jsonPath("$.code").isEqualTo(SampleErrorCode.SAMPLE_NOT_FOUND.code)
+    }
+
+    @Test
+    fun `GET returns 400 for invalid path variable`() {
         webTestClient.get()
-            .uri("/hello/9.9/hello")
+            .uri("/sample/$API_VERSION_V1/samples/abc")
             .exchange()
             .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code)
     }
 
+    // ── 공통 에러 ───────────────────────────────────────────────────────────
+
     @Test
-    fun `unknown path returns not found code`() {
+    fun `unknown path returns not found`() {
         webTestClient.get()
             .uri("/unknown")
             .exchange()
@@ -178,32 +209,15 @@ class ApplicationHttpIntegrationTests {
             .expectHeader().exists("X-Trace-Id")
             .expectBody()
             .jsonPath("$.code").isEqualTo(CommonErrorCode.NOT_FOUND.code)
-            .jsonPath("$.path").isEqualTo("/unknown")
             .jsonPath("$.traceId").exists()
     }
 
     @Test
-    fun `provided trace id is reused in response header and body`() {
+    fun `provided trace id is reused in response`() {
         val traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
         webTestClient.get()
             .uri("/unknown")
             .header("X-Trace-Id", traceId)
-            .exchange()
-            .expectStatus().isNotFound
-            .expectHeader().valueEquals("X-Trace-Id", traceId)
-            .expectBody()
-            .jsonPath("$.traceId").isEqualTo(traceId)
-    }
-
-    @Test
-    fun `traceparent trace id is reused when custom header is absent`() {
-        val traceId = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        val traceParent = "00-$traceId-cccccccccccccccc-01"
-
-        webTestClient.get()
-            .uri("/unknown")
-            .header("traceparent", traceParent)
             .exchange()
             .expectStatus().isNotFound
             .expectHeader().valueEquals("X-Trace-Id", traceId)

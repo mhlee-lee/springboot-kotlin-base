@@ -10,14 +10,15 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.coRouter
 
 @Configuration
-class SampleRouter(private val sampleHandler: SampleHandler) {
+class SampleRouter(private val handler: SampleHandler) {
     @Bean
-    fun coRouteSample(): RouterFunction<ServerResponse> = coRouter {
+    fun sampleRoutes(): RouterFunction<ServerResponse> = coRouter {
         (accept(MediaType.APPLICATION_JSON) and version(API_VERSION_V1) and "/sample/{version}").nest {
-            GET("sample", sampleHandler::getSample)
-            GET("addressScope", sampleHandler::addressScope)
-            PUT("sample/{gender}", sampleHandler::putSample)
-            POST("validation", sampleHandler::validateSample)
+            GET("samples", handler::searchSamples)
+            GET("samples/{id}", handler::getSample)
+            POST("samples", handler::createSample)
+            PUT("samples/{id}", handler::updateSample)
+            DELETE("samples/{id}", handler::deleteSample)
         }
     }
 }
