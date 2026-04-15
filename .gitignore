@@ -50,4 +50,6 @@ out/
 !buildSrc/build.gradle.kts
 
 ### AI
+.agents/
+.claude/
 CLAUDE.md
