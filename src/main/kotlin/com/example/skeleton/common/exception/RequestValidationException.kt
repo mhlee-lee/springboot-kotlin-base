@@ -5,8 +5,8 @@ import com.example.skeleton.common.errors.ErrorCode
 import org.springframework.http.HttpStatus
 
 open class RequestValidationException(
-    val status: HttpStatus = HttpStatus.BAD_REQUEST,
-    val errorCode: ErrorCode,
+    status: HttpStatus = HttpStatus.BAD_REQUEST,
+    errorCode: ErrorCode,
     val fieldErrors: List<ApiFieldError>,
     cause: Throwable? = null,
-) : RuntimeException(errorCode.getMessage(), cause)
+) : DefaultException(status = status, errorCode = errorCode, cause = cause)

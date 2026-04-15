@@ -11,12 +11,10 @@ import org.hibernate.validator.constraints.Range
 import org.springframework.boot.json.JsonParseException
 import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.webflux.error.DefaultErrorAttributes
-import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.core.io.buffer.DataBufferLimitException
 import org.springframework.http.HttpStatus
 import org.springframework.http.InvalidMediaTypeException
 import org.springframework.validation.MessageCodesResolver
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.support.WebExchangeBindException
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.server.ResponseStatusException
@@ -44,10 +42,9 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         }
     }
 
-    // 순서 중요
+    // 순서 중요: DefaultException 분기에서 RequestValidationException 도 함께 처리
     private fun getErrorResult(error: Throwable, request: ServerRequest, locale: Locale): ApiErrorResponse =
         when (error) {
-            is RequestValidationException -> handleRequestValidationException(error, request, locale)
             is DefaultException -> handleDefaultException(error, request, locale)
             is WebExchangeBindException -> handleWebExchangeBindException(error, request, locale)
             is ConstraintViolationException -> handleConstraintViolationException(error, request, locale)
@@ -58,8 +55,8 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
             else -> handleUnknownException(request, locale)
         }
 
-    private fun handleRequestValidationException(
-        ex: RequestValidationException,
+    private fun handleDefaultException(
+        ex: DefaultException,
         request: ServerRequest,
         locale: Locale,
     ): ApiErrorResponse = errorResponse(
@@ -67,26 +64,9 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         errorCode = ex.errorCode,
         request = request,
         locale = locale,
-        errors = ex.fieldErrors,
+        message = ex.errorCode.getMessage(ex.messageArguments, locale),
+        errors = (ex as? RequestValidationException)?.fieldErrors,
     )
-
-    private fun handleDefaultException(
-        ex: DefaultException,
-        request: ServerRequest,
-        locale: Locale,
-    ): ApiErrorResponse {
-        val httpStatus = AnnotatedElementUtils.findMergedAnnotation(ex.javaClass, ResponseStatus::class.java)
-            ?.code
-            ?: HttpStatus.BAD_REQUEST
-
-        return errorResponse(
-            status = httpStatus,
-            errorCode = ex.errorCode,
-            request = request,
-            locale = locale,
-            message = ex.errorCode.getMessage(ex.messageArguments, locale),
-        )
-    }
 
     // Spring Web Validation 관련 처리
     private fun handleWebExchangeBindException(
