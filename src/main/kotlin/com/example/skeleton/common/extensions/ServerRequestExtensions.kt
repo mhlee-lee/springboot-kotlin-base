@@ -40,15 +40,20 @@ private fun resolveBindField(exception: BindException): String =
 
 private fun <T : Any> ServerRequest.resolveQueryField(clazz: KClass<T>): String {
     val queryFields = queryParams().keys
-    val constructorFields = clazz.primaryConstructor
-        ?.parameters
-        ?.filter { parameter -> !parameter.isOptional && !parameter.type.isMarkedNullable }
-        ?.mapNotNull(KParameter::name)
-        .orEmpty()
+    val constructorParams = clazz.primaryConstructor?.parameters.orEmpty()
+    val requiredFields = constructorParams
+        .filter { parameter -> !parameter.isOptional && !parameter.type.isMarkedNullable }
+        .mapNotNull(KParameter::name)
 
-    return constructorFields.firstOrNull { it !in queryFields }
-        ?: queryFields.firstOrNull()
-        ?: clazz.primaryConstructor?.parameters?.firstNotNullOfOrNull(KParameter::name)
+    // 1. 누락된 required 필드가 있으면 해당 필드 반환
+    val missingField = requiredFields.firstOrNull { it !in queryFields }
+    if (missingField != null) return missingField
+
+    // 2. 모든 required 필드가 전달된 경우 (타입 변환 실패 등)
+    //    전달된 query parameter 중 constructor에 매칭되는 것을 반환
+    val allParamNames = constructorParams.mapNotNull(KParameter::name)
+    return queryFields.firstOrNull { it in allParamNames }
+        ?: allParamNames.firstOrNull()
         ?: clazz.simpleName
         ?: "query"
 }

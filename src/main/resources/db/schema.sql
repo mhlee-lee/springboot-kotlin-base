@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS samples;
+
 CREATE TABLE IF NOT EXISTS samples
 (
     id
