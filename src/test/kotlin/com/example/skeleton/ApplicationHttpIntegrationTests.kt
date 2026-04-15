@@ -198,6 +198,18 @@ class ApplicationHttpIntegrationTests {
             .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code)
     }
 
+    @Test
+    fun `GET returns query field name when query parameter binding fails`() {
+        webTestClient.get()
+            .uri("/sample/$API_VERSION_V1/samples?minAge=abc")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.code").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code)
+            .jsonPath("$.errors[0].source").isEqualTo(ErrorSource.QUERY.wireName)
+            .jsonPath("$.errors[0].field").isEqualTo("minAge")
+    }
+
     // ── 공통 에러 ───────────────────────────────────────────────────────────
 
     @Test
