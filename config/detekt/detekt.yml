@@ -1,3 +1,8 @@
+# =============================================================================
+# detekt 설정 — detekt 고유 규칙만 포함
+# ktlint 포맷팅 설정은 .editorconfig 에서 관리
+# =============================================================================
+
 complexity:
   LongParameterList:
     allowedFunctionParameters: 6
@@ -9,17 +14,18 @@ naming:
   FunctionNaming:
     excludeClassPattern: '.*(Test|Tests|IT|IntegrationTests)$'
   PackageNaming:
-    # 언더스코어 제거 — detekt 기본 패턴 기준으로 복원
+    # Kotlin 스타일 가이드: 소문자만, 언더스코어 사용하지 않음
     packagePattern: '[a-z]+(\.[a-z][a-z0-9]*)*'
 
 style:
-  # detekt 기본 MaxLineLength 비활성화 → ktlint MaximumLineLength로 단일화
+  # detekt 고유 규칙 비활성화 → ktlint 규칙으로 단일화 (.editorconfig 설정)
   MaxLineLength:
     active: false
-  # detekt 기본 ModifierOrder 비활성화 → ktlint ModifierOrdering으로 단일화
   ModifierOrder:
     active: false
   NewLineAtEndOfFile:
+    active: false
+  WildcardImport:
     active: false
   ReturnCount:
     excludeGuardClauses: true
@@ -27,25 +33,14 @@ style:
     excludeGuardClauses: true
   UnusedParameter:
     allowedNames: 'ignored|expected|ignored.*'
-  # detekt 기본 WildcardImport 비활성화 → ktlint NoWildcardImports로 단일화
-  WildcardImport:
-    active: false
 
+# ktlint 규칙 활성화/비활성화 — 값 설정은 .editorconfig 에서 관리
 ktlint:
-  code_style: ktlint_official
   Filename:
     active: false
-  FinalNewline:
-    active: true
-  MaximumLineLength:
-    active: true
-    maxLineLength: 120
-  ModifierOrdering:
-    active: true
   NoWildcardImports:
+    # IntelliJ는 star import 임계값(5)을 사용하므로 비활성화
     active: false
-  PackageName:
-    # detekt naming.PackageNaming이 패키지 명명 규칙을 담당하므로 중복 비활성화
-    active: false
-  PropertyName:
+  TrailingCommaOnCallSite:
+    # Kotlin style guide: call site는 개발자 재량 → 강제하지 않음
     active: false

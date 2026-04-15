@@ -10,9 +10,7 @@ import kotlin.test.assertEquals
 
 @SpringBootTest
 @ActiveProfiles("test")
-class MessageI18nIntegrationTests(
-    @Autowired private val applicationValidator: LocalValidatorFactoryBean,
-) {
+class MessageI18nIntegrationTests(@Autowired private val applicationValidator: LocalValidatorFactoryBean) {
     @Test
     fun `message converter delegates to spring message source`() {
         assertEquals("남성", MessageConverter.getMessage("enum.Gender.MALE"))

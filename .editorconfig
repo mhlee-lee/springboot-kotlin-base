@@ -1,99 +1,73 @@
-# ============================================================
-# .editorconfig — detekt.yml 기반 변환
-# Generated from detekt.yml (ktlint_official code style)
-# ============================================================
+# =============================================================================
+# EditorConfig — IntelliJ "Kotlin style guide" 동기화
+# https://kotlinlang.org/docs/coding-conventions.html
+# =============================================================================
 root = true
 
-# ─────────────────────────────────────────
-# 전체 파일 공통 기본값
-# ─────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# 공통
+# -----------------------------------------------------------------------------
 [*]
 charset = utf-8
 end_of_line = lf
 indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
-# ktlint: FinalNewline active=true → 파일 끝 개행 강제
-# detekt: NewLineAtEndOfFile active=false 이지만 ktlint 규칙이 우선 적용
 insert_final_newline = true
 
-# ─────────────────────────────────────────
-# Kotlin 소스 파일 (.kt / .kts)
-# ─────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# Kotlin — Kotlin coding conventions (= IntelliJ "Kotlin style guide")
+# -----------------------------------------------------------------------------
 [*.{kt,kts}]
 
-# ── ktlint 코드 스타일 ───────────────────
-# ktlint.code_style: ktlint_official
-ktlint_code_style = ktlint_official
+# IntelliJ: "Set from… → Kotlin style guide" 와 동일
+ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
 
-# ── 줄 길이 ─────────────────────────────
-# detekt: MaxLineLength active=false (비활성 — ktlint로 단일화)
-# ktlint: MaximumLineLength active=true, maxLineLength=120
+# ktlint code style — intellij_idea = IntelliJ 포매터와 호환
+ktlint_code_style = intellij_idea
+
+# --- 들여쓰기 ----------------------------------------------------------------
+indent_size = 4
+ij_continuation_indent_size = 4
+
+# --- 최대 줄 길이 -------------------------------------------------------------
 max_line_length = 120
 
-# ── 파일 끝 개행 ─────────────────────────
-# ktlint: FinalNewline active=true
-insert_final_newline = true
+# --- Import 정렬 --------------------------------------------------------------
+# Kotlin style guide 순서: 모든 import → java → javax → kotlin → alias
+ij_kotlin_imports_layout = *, java.**, javax.**, kotlin.**, ^
 
-# ─────────────────────────────────────────
-# ktlint 규칙 개별 활성/비활성
-# ─────────────────────────────────────────
-
-# Filename: active=false
-ktlint_standard_filename = disabled
-
-# FinalNewline: active=true (위 insert_final_newline=true와 동기화)
-ktlint_standard_final-newline = enabled
-
-# MaximumLineLength: active=true (max_line_length=120으로 제어)
-ktlint_standard_max-line-length = enabled
-
-# ModifierOrdering: active=true
-# detekt: ModifierOrder active=false (중복 → ktlint로 단일화)
-ktlint_standard_modifier-ordering = enabled
-
-
-# PackageName: active=false
-# detekt naming.PackageNaming 이 패키지 명명 규칙을 담당하므로 중복 비활성화
-# detekt packagePattern: '[a-z]+(\.[a-z][a-z0-9]*)*'
-ktlint_standard_package-name = disabled
-
-# PropertyName: active=false
-ktlint_standard_property-naming = disabled
-
-# ── IntelliJ Optimize Imports 와일드카드 방지 ──────────────
-# 같은 패키지에서 N개 이상일 때 * 로 묶는 임계값
-# 2147483647(Integer.MAX_VALUE) = 사실상 절대 * 사용 안 함
+# --- Wildcard(Star) import ----------------------------------------------------
+# IntelliJ 기본값: 동일 패키지에서 N개 이상이면 star import 사용
 ij_kotlin_name_count_to_use_star_import = 5
-ij_kotlin_name_count_to_use_star_import_for_members = 5
+ij_kotlin_name_count_to_use_star_import_for_members = 3
+# IntelliJ 기본 star import 허용 패키지
+ij_kotlin_packages_to_use_import_on_demand = java.util.*, kotlinx.android.synthetic.**
 
-# NoWildcardImports: active=true
-# detekt: WildcardImport active=false (중복 → ktlint로 단일화)
-ktlint_standard_no-wildcard-imports = disabled
+# --- Trailing comma -----------------------------------------------------------
+# Declaration site: 권장 (Kotlin style guide)
+ij_kotlin_allow_trailing_comma = true
+# Call site: 개발자 재량 (Kotlin style guide), IntelliJ 기본값 = false
+ij_kotlin_allow_trailing_comma_on_call_site = false
 
-# ─────────────────────────────────────────
-# YAML / 설정 파일
-# ─────────────────────────────────────────
+# --- ktlint 규칙 활성화/비활성화는 detekt.yml 에서 관리 -------------------------
+# detekt ktlint wrapper는 .editorconfig 의 ktlint_standard_* 속성을 읽지 않음
+# → detekt.yml 의 ktlint 섹션에서 active: true/false 로 제어
+
+# -----------------------------------------------------------------------------
+# YAML
+# -----------------------------------------------------------------------------
 [*.{yml,yaml}]
 indent_size = 2
 
-# ─────────────────────────────────────────
-# JSON
-# ─────────────────────────────────────────
-[*.json]
+# -----------------------------------------------------------------------------
+# JSON / XML
+# -----------------------------------------------------------------------------
+[*.{json,xml}]
 indent_size = 2
 
-# ─────────────────────────────────────────
-# Gradle 빌드 스크립트
-# ─────────────────────────────────────────
-[*.{gradle,gradle.kts}]
-indent_size = 4
-ktlint_code_style = ktlint_official
-max_line_length = 120
-insert_final_newline = true
-
-# ─────────────────────────────────────────
-# Markdown — 후행 공백 보존 (줄바꿈 목적)
-# ─────────────────────────────────────────
-[*.md]
-trim_trailing_whitespace = false
+# -----------------------------------------------------------------------------
+# Properties
+# -----------------------------------------------------------------------------
+[*.properties]
+charset = utf-8

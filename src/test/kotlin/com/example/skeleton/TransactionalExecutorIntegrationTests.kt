@@ -10,9 +10,7 @@ import kotlin.test.assertTrue
 
 @SpringBootTest
 @ActiveProfiles("test")
-class TransactionalExecutorIntegrationTests(
-    @Autowired private val transactionalPort: TransactionalPort,
-) {
+class TransactionalExecutorIntegrationTests(@Autowired private val transactionalPort: TransactionalPort) {
     @Test
     fun `write transaction block runs on virtual thread`() = runBlocking {
         val isVirtualThread = transactionalPort.execute {

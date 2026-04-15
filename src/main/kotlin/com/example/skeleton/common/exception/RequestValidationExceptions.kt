@@ -13,14 +13,13 @@ open class SingleFieldRequestValidationException(
 ) : RequestValidationException(
     status = status,
     errorCode = errorCode,
-    fieldErrors =
-        listOf(
-            ApiFieldError(
-                source = source.wireName,
-                field = field,
-                message = message,
-            ),
+    fieldErrors = listOf(
+        ApiFieldError(
+            source = source.wireName,
+            field = field,
+            message = message,
         ),
+    ),
     cause = cause,
 )
 
