@@ -54,19 +54,20 @@ class ApplicationHttpIntegrationTests {
         webTestClient.post()
             .uri("/sample/$API_VERSION_V1/samples")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"name":"Alice","age":30}""")
+            .bodyValue("""{"name":"Alice","age":30,"status":"ACTIVE"}""")
             .exchange()
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.id").isNotEmpty
             .jsonPath("$.name").isEqualTo("Alice")
             .jsonPath("$.age").isEqualTo(30)
+            .jsonPath("$.status").isEqualTo("ACTIVE")
     }
 
     @Test
     fun `GET by id returns existing sample`() {
         // GET 은 read DB 에서 조회
-        readJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'Bob', 25)")
+        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Bob', 25, 'active')")
 
         webTestClient.get()
             .uri("/sample/$API_VERSION_V1/samples/1")
@@ -81,9 +82,9 @@ class ApplicationHttpIntegrationTests {
     @Test
     fun `GET search with query params filters results`() {
         // GET 은 read DB 에서 조회
-        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Alice', 30)")
-        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Bob', 20)")
-        readJdbc.update("INSERT INTO samples (name, age) VALUES ('Charlie', 40)")
+        readJdbc.update("INSERT INTO samples (name, age, status) VALUES ('Alice', 30, 'active')")
+        readJdbc.update("INSERT INTO samples (name, age, status) VALUES ('Bob', 20, 'inactive')")
+        readJdbc.update("INSERT INTO samples (name, age, status) VALUES ('Charlie', 40, 'active')")
 
         webTestClient.get()
             .uri("/sample/$API_VERSION_V1/samples?minAge=25&maxAge=35")
@@ -98,13 +99,13 @@ class ApplicationHttpIntegrationTests {
     @Test
     fun `PUT updates an existing sample`() {
         // PUT 은 write DB 에서 수정
-        writeJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'Old', 10)")
+        writeJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Old', 10, 'active')")
 
         webTestClient.put()
             .uri("/sample/$API_VERSION_V1/samples/1")
             .header("X-Modified-By", "tester")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"name":"Updated","age":99}""")
+            .bodyValue("""{"name":"Updated","age":99,"status":"INACTIVE"}""")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -116,7 +117,7 @@ class ApplicationHttpIntegrationTests {
     @Test
     fun `DELETE removes an existing sample`() {
         // DELETE 는 write DB 에서 삭제
-        writeJdbc.update("INSERT INTO samples (id, name, age) VALUES (1, 'ToDelete', 1)")
+        writeJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'ToDelete', 1, 'active')")
 
         webTestClient.delete()
             .uri("/sample/$API_VERSION_V1/samples/1")
@@ -143,7 +144,7 @@ class ApplicationHttpIntegrationTests {
         webTestClient.put()
             .uri("/sample/$API_VERSION_V1/samples/1")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"name":"Test","age":20}""")
+            .bodyValue("""{"name":"Test","age":20,"status":"ACTIVE"}""")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
@@ -169,7 +170,7 @@ class ApplicationHttpIntegrationTests {
         webTestClient.post()
             .uri("/sample/$API_VERSION_V1/samples")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"name":"","age":-1}""")
+            .bodyValue("""{"name":"","age":-1,"status":"ACTIVE"}""")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()

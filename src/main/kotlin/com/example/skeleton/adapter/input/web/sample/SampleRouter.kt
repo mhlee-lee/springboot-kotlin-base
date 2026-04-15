@@ -15,6 +15,7 @@ class SampleRouter(private val handler: SampleHandler) {
     fun sampleRoutes(): RouterFunction<ServerResponse> = coRouter {
         (accept(MediaType.APPLICATION_JSON) and version(API_VERSION_V1) and "/sample/{version}").nest {
             GET("samples", handler::searchSamples)
+            GET("samples/status/{status}", handler::searchSamplesByStatus) // Path variable enum 예시
             GET("samples/{id}", handler::getSample)
             POST("samples", handler::createSample)
             PUT("samples/{id}", handler::updateSample)

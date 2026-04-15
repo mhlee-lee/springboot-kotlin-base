@@ -19,6 +19,8 @@ naming:
 
 style:
   MagicNumber:
+    # Enum 엔트리는 본질적으로 상수 리터럴을 포함하므로 무시 (priority, order 등)
+    ignoreEnums: true
     ignoreAnnotated:
       - 'Min'
       - 'Max'
@@ -44,6 +46,9 @@ style:
 
 # ktlint 규칙 활성화/비활성화 — 값 설정은 .editorconfig 에서 관리
 ktlint:
+  ClassSignature:
+    # .editorconfig 와 동기화: 생성자 멀티라인 시 super type 강제 줄바꿈 비활성화
+    active: false
   Filename:
     active: false
   NoWildcardImports:

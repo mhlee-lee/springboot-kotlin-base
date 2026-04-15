@@ -54,6 +54,10 @@ ij_kotlin_allow_trailing_comma_on_call_site = false
 # IntelliJ ktlint 플러그인용 (detekt.yml 의 ktlint 섹션과 동일하게 유지)
 # NoWildcardImports: IntelliJ는 star import 임계값(5)을 사용하므로 비활성화
 ktlint_standard_no-wildcard-imports = disabled
+# ClassSignature: 생성자가 멀티라인이면 super type도 강제 줄바꿈하는데,
+# 라인 길이 제한에 안 걸리면 한 줄로 유지하고 싶으므로 비활성화.
+# 생성자 포맷은 FunctionSignature, 라인 길이는 MaximumLineLength 로 커버.
+ktlint_standard_class-signature = disabled
 # Filename: Spring 등 프레임워크에서 파일명 규칙이 다를 수 있어 비활성화
 ktlint_standard_filename = disabled
 

@@ -1,5 +1,6 @@
 package com.example.skeleton.common.extensions
 
+import com.example.skeleton.common.exception.InvalidEnumPathParameterException
 import com.example.skeleton.common.exception.QueryParameterBindingException
 import com.example.skeleton.common.exception.RequiredHeaderException
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -9,6 +10,16 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
+
+// ── Path Variable ────────────────────────────────────────────────────────
+// Enum path variable 바인딩 예시: request.enumPathVariable<SampleStatus>("status")
+inline fun <reified E : Enum<E>> ServerRequest.enumPathVariable(name: String): E = try {
+    enumValueOf<E>(pathVariable(name).uppercase())
+} catch (_: IllegalArgumentException) {
+    throw InvalidEnumPathParameterException(name)
+}
+
+// ── Header ───────────────────────────────────────────────────────────────
 
 suspend inline fun <reified T : Any> ServerRequest.bindQueryParams(): T = bindQueryParams(T::class)
 

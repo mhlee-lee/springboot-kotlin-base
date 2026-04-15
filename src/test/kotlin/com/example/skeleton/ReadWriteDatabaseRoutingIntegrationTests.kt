@@ -44,8 +44,8 @@ class ReadWriteDatabaseRoutingIntegrationTests {
         writeJdbcTemplate.update("DELETE FROM samples")
         readJdbcTemplate.update("DELETE FROM samples")
 
-        writeJdbcTemplate.update("INSERT INTO samples (name, age) VALUES ('writer-only', 11)")
-        readJdbcTemplate.update("INSERT INTO samples (name, age) VALUES ('reader-only', 22)")
+        writeJdbcTemplate.update("INSERT INTO samples (name, age, status) VALUES ('writer-only', 11, 'active')")
+        readJdbcTemplate.update("INSERT INTO samples (name, age, status) VALUES ('reader-only', 22, 'active')")
     }
 
     @Test

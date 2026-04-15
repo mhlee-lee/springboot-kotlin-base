@@ -8,6 +8,7 @@ import com.example.skeleton.application.port.output.sample.SamplePort
 import com.example.skeleton.application.port.output.transaction.TransactionalPort
 import com.example.skeleton.common.exception.SampleNotFoundException
 import com.example.skeleton.domain.sample.model.Sample
+import com.example.skeleton.domain.sample.model.SampleStatus
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -19,7 +20,12 @@ class SampleService(private val transactionalPort: TransactionalPort, private va
 
     override suspend fun searchSamples(query: SampleSearchQuery): List<Sample> = transactionalPort.executeReadOnly {
         log.debug("searchSamples() - query={}", query)
-        samplePort.findByFilter(query.name, query.minAge, query.maxAge)
+        samplePort.findByFilter(query.name, query.minAge, query.maxAge, query.status)
+    }
+
+    override suspend fun searchSamplesByStatus(status: SampleStatus): List<Sample> = transactionalPort.executeReadOnly {
+        log.debug("searchSamplesByStatus() - status={}", status)
+        samplePort.findByStatus(status)
     }
 
     override suspend fun getSample(id: Long): Sample = transactionalPort.executeReadOnly {
@@ -28,12 +34,12 @@ class SampleService(private val transactionalPort: TransactionalPort, private va
 
     override suspend fun createSample(command: CreateSampleCommand): Sample = transactionalPort.execute {
         log.debug("createSample() - command={}", command)
-        samplePort.insert(command.name, command.age)
+        samplePort.insert(command.name, command.age, command.status)
     }
 
     override suspend fun updateSample(command: UpdateSampleCommand): Sample = transactionalPort.execute {
         log.debug("updateSample() - command={}, modifiedBy={}", command, command.modifiedBy)
-        if (!samplePort.update(command.id, command.name, command.age)) {
+        if (!samplePort.update(command.id, command.name, command.age, command.status)) {
             throw SampleNotFoundException(command.id)
         }
         samplePort.findById(command.id)!!

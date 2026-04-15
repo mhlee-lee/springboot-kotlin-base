@@ -15,5 +15,9 @@ CREATE TABLE IF NOT EXISTS samples
 (
     255
 ) NOT NULL,
-    age INTEGER NOT NULL
+    age INTEGER NOT NULL,
+    status VARCHAR
+(
+    20
+) NOT NULL
     );
