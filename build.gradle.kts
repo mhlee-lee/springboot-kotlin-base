@@ -135,10 +135,10 @@ tasks.withType<Detekt>().configureEach {
     exclude("**/build/**", "**/generated-src/**")
 
     reports {
-        checkstyle.required.set(true)
-        html.required.set(true)
+        checkstyle.required.set(false)
+        html.required.set(false)
         markdown.required.set(true)
-        sarif.required.set(true)
+        sarif.required.set(false)
     }
 }
 

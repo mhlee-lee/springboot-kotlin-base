@@ -10,10 +10,8 @@ import java.time.Duration
 @Configuration(proxyBeanMethods = false)
 class WebClientConfiguration {
     @Bean
-    fun httpClientSettings(): HttpClientSettings {
-        val timeout = Duration.ofSeconds(10)
-        return HttpClientSettings.defaults().withTimeouts(timeout, timeout)
-    }
+    fun httpClientSettings(): HttpClientSettings =
+        HttpClientSettings.defaults().withTimeouts(HTTP_CLIENT_TIMEOUT, HTTP_CLIENT_TIMEOUT)
 
     @Bean
     fun webClientCustomizer(): WebClientCustomizer = WebClientCustomizer { builder ->
@@ -24,4 +22,8 @@ class WebClientConfiguration {
 
     @Bean
     fun webClient(webClientBuilder: WebClient.Builder): WebClient = webClientBuilder.build()
+
+    private companion object {
+        val HTTP_CLIENT_TIMEOUT: Duration = Duration.ofSeconds(10)
+    }
 }

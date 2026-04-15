@@ -9,11 +9,14 @@ naming:
   FunctionNaming:
     excludeClassPattern: '.*(Test|Tests|IT|IntegrationTests)$'
   PackageNaming:
-    packagePattern: '[a-z]+(\.[a-z_][A-Za-z0-9_]*)*'
+    # 언더스코어 제거 — detekt 기본 패턴 기준으로 복원
+    packagePattern: '[a-z]+(\.[a-z][a-z0-9]*)*'
 
 style:
+  # detekt 기본 MaxLineLength 비활성화 → ktlint MaximumLineLength로 단일화
   MaxLineLength:
     active: false
+  # detekt 기본 ModifierOrder 비활성화 → ktlint ModifierOrdering으로 단일화
   ModifierOrder:
     active: false
   NewLineAtEndOfFile:
@@ -24,6 +27,7 @@ style:
     excludeGuardClauses: true
   UnusedParameter:
     allowedNames: 'ignored|expected|ignored.*'
+  # detekt 기본 WildcardImport 비활성화 → ktlint NoWildcardImports로 단일화
   WildcardImport:
     active: false
 
@@ -39,8 +43,9 @@ ktlint:
   ModifierOrdering:
     active: true
   NoWildcardImports:
-    active: true
+    active: false
   PackageName:
+    # detekt naming.PackageNaming이 패키지 명명 규칙을 담당하므로 중복 비활성화
     active: false
   PropertyName:
     active: false

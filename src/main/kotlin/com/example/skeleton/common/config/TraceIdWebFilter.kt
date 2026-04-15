@@ -40,7 +40,7 @@ class TraceIdWebFilter : WebFilter {
         }
 
         val segments = traceParent.split("-")
-        if (segments.size != 4) {
+        if (segments.size != TRACE_PARENT_SEGMENT_COUNT) {
             return null
         }
 
@@ -56,6 +56,7 @@ class TraceIdWebFilter : WebFilter {
         const val TRACE_PARENT_HEADER = "traceparent"
         const val B3_TRACE_ID_HEADER = "X-B3-TraceId"
         const val MDC_TRACE_ID_KEY = "traceId"
+        private const val TRACE_PARENT_SEGMENT_COUNT = 4
         val TRACE_PARENT_TRACE_ID_REGEX = Regex("^[0-9a-f]{32}$")
     }
 }

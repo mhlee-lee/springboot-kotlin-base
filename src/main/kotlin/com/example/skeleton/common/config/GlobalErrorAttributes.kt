@@ -267,37 +267,36 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
         request = request,
         locale = locale,
     )
+}
 
-    private fun errorResponse(
-        status: HttpStatus,
-        errorCode: ErrorCode,
-        request: ServerRequest,
-        locale: Locale,
-        message: String = errorCode.getMessage(locale = locale),
-        errors: List<ApiFieldError>? = null,
-    ): ApiErrorResponse = ApiErrorResponse(
-        status = status.value(),
-        code = errorCode.code,
-        message = message,
-        path = request.path(),
-        traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
-            ?: request.exchange().request.id,
-        errors = errors,
-    )
+private fun errorResponse(
+    status: HttpStatus,
+    errorCode: ErrorCode,
+    request: ServerRequest,
+    locale: Locale,
+    message: String = errorCode.getMessage(locale = locale),
+    errors: List<ApiFieldError>? = null,
+): ApiErrorResponse = ApiErrorResponse(
+    status = status.value(),
+    code = errorCode.code,
+    message = message,
+    path = request.path(),
+    traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
+        ?: request.exchange().request.id,
+    errors = errors,
+)
 
-    // validation 어노테이션에서 속성값 추출
-    private fun extractConstraintArguments(annotation: Annotation): Array<Any> = when (annotation) {
-        is Range -> arrayOf(annotation.min, annotation.max)
-        is Size -> arrayOf(annotation.min, annotation.max)
-        is Min -> arrayOf(annotation.value)
-        is Max -> arrayOf(annotation.value)
-        is DecimalMin -> arrayOf(annotation.value)
-        is DecimalMax -> arrayOf(annotation.value)
-        is Pattern -> arrayOf(annotation.regexp)
-        else -> emptyArray()
-    }
+private fun extractConstraintArguments(annotation: Annotation): Array<Any> = when (annotation) {
+    is Range -> arrayOf(annotation.min, annotation.max)
+    is Size -> arrayOf(annotation.min, annotation.max)
+    is Min -> arrayOf(annotation.value)
+    is Max -> arrayOf(annotation.value)
+    is DecimalMin -> arrayOf(annotation.value)
+    is DecimalMax -> arrayOf(annotation.value)
+    is Pattern -> arrayOf(annotation.regexp)
+    else -> emptyArray()
+}
 
-    private fun extractLeafFieldName(propertyPath: String): String = propertyPath.substringAfterLast('.').ifBlank {
-        propertyPath
-    }
+private fun extractLeafFieldName(propertyPath: String): String = propertyPath.substringAfterLast('.').ifBlank {
+    propertyPath
 }
