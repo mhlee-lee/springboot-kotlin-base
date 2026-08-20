@@ -235,8 +235,8 @@ class GlobalErrorAttributes(private val messageResolver: MessageCodesResolver) :
 
     private fun handleDataBufferLimitException(request: ServerRequest, locale: Locale): ApiErrorResponse =
         errorResponse(
-            status = HttpStatus.PAYLOAD_TOO_LARGE,
-            errorCode = CommonErrorCode.PAYLOAD_TOO_LARGE,
+            status = HttpStatus.CONTENT_TOO_LARGE,
+            errorCode = CommonErrorCode.CONTENT_TOO_LARGE,
             request = request,
             locale = locale,
         )

@@ -13,7 +13,7 @@ enum class CommonErrorCode(override val code: String, override val label: String
     VALIDATION_FAIL("EKCP010", "common.CommonErrorCode.VALIDATION_FAIL"),
     EMPTY_BODY("EKCP011", "common.CommonErrorCode.EMPTY_BODY"),
     INVALID_PARAMETER("EKCP012", "common.CommonErrorCode.INVALID_PARAMETER"),
-    PAYLOAD_TOO_LARGE("EKCP013", "common.CommonErrorCode.PAYLOAD_TOO_LARGE"),
+    CONTENT_TOO_LARGE("EKCP013", "common.CommonErrorCode.CONTENT_TOO_LARGE"),
     JSON_PARSE_ERROR("EKCP014", "common.CommonErrorCode.JSON_PARSE_ERROR"),
     NOT_NULL("EKCP015", "common.CommonErrorCode.NOT_NULL"),
     INVALID_FORMAT("EKCP016", "common.CommonErrorCode.INVALID_FORMAT"),
