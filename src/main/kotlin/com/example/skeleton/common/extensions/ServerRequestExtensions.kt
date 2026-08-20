@@ -1,6 +1,9 @@
 package com.example.skeleton.common.extensions
 
+import com.example.skeleton.common.errors.CommonErrorCode
+import com.example.skeleton.common.errors.ErrorSource
 import com.example.skeleton.common.exception.InvalidEnumPathParameterException
+import com.example.skeleton.common.exception.InvalidRequestFieldException
 import com.example.skeleton.common.exception.QueryParameterBindingException
 import com.example.skeleton.common.exception.RequiredHeaderException
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -10,6 +13,7 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
+import kotlin.uuid.Uuid
 
 // ── Path Variable ────────────────────────────────────────────────────────
 // Enum path variable 바인딩 예시: request.enumPathVariable<SampleStatus>("status")
@@ -29,6 +33,22 @@ suspend inline fun <reified T : Any> ServerRequest.bindQueryParams(
 
 fun ServerRequest.headerOrThrow(name: String): String =
     this.headers().firstHeader(name) ?: throw RequiredHeaderException(name)
+
+fun ServerRequest.uuidHeaderOrThrow(name: String): Uuid {
+    val value = headerOrThrow(name)
+    return runCatching { Uuid.parse(value) }
+        .getOrElse { throw RequiredHeaderException(name) }
+}
+
+fun ServerRequest.uuidPathVariableOrThrow(name: String): Uuid = runCatching { Uuid.parse(pathVariable(name)) }
+    .getOrElse { error ->
+        throw InvalidRequestFieldException(
+            source = ErrorSource.PATH,
+            field = name,
+            errorCode = CommonErrorCode.INVALID_PARAMETER,
+            cause = error,
+        )
+    }
 
 suspend fun <T : Any> ServerRequest.bindQueryParams(clazz: KClass<T>): T = bindQueryParams(clazz) { }
 
