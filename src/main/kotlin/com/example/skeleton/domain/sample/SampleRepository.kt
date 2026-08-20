@@ -1,9 +1,9 @@
-package com.example.skeleton.application.port.output.sample
+package com.example.skeleton.domain.sample
 
 import com.example.skeleton.domain.sample.model.Sample
 import com.example.skeleton.domain.sample.model.SampleStatus
 
-interface SamplePort {
+interface SampleRepository {
     fun findAll(): List<Sample>
     fun findByFilter(name: String?, minAge: Int?, maxAge: Int?, status: SampleStatus?): List<Sample>
     fun findByStatus(status: SampleStatus): List<Sample>

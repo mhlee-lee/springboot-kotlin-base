@@ -1,7 +1,7 @@
-package com.example.skeleton.adapter.output.persistence.jooq.sample
+package com.example.skeleton.infrastructure.jooq
 
-import com.example.skeleton.application.port.output.sample.SamplePort
 import com.example.skeleton.common.extensions.requireByValue
+import com.example.skeleton.domain.sample.SampleRepository
 import com.example.skeleton.domain.sample.model.Sample
 import com.example.skeleton.domain.sample.model.SampleStatus
 import com.example.skeleton.jooq.generated.tables.Samples.Companion.SAMPLES
@@ -11,7 +11,7 @@ import org.jooq.impl.DSL
 import org.springframework.stereotype.Component
 
 @Component
-class SamplePersistenceAdapter(private val dslContext: DSLContext) : SamplePort {
+class SampleRepositoryAdapter(private val dslContext: DSLContext) : SampleRepository {
 
     override fun findAll(): List<Sample> = dslContext
         .selectFrom(SAMPLES)

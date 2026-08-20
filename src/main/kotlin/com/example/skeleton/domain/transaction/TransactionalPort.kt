@@ -1,4 +1,4 @@
-package com.example.skeleton.application.port.output.transaction
+package com.example.skeleton.domain.transaction
 
 interface TransactionalPort {
     suspend fun <T> execute(block: () -> T): T

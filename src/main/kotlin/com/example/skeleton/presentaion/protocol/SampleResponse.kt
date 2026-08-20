@@ -1,4 +1,4 @@
-package com.example.skeleton.adapter.input.web.sample.protocol
+package com.example.skeleton.presentaion.protocol
 
 import com.example.skeleton.domain.sample.model.Sample
 import com.example.skeleton.domain.sample.model.SampleStatus

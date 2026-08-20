@@ -1,6 +1,6 @@
 package com.example.skeleton
 
-import com.example.skeleton.application.port.output.transaction.TransactionalPort
+import com.example.skeleton.domain.transaction.TransactionalPort
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

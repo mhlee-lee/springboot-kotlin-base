@@ -1,4 +1,4 @@
-package com.example.skeleton.application.port.input.sample.model
+package com.example.skeleton.application.sample.model
 
 import com.example.skeleton.domain.sample.model.SampleStatus
 

@@ -1,4 +1,4 @@
-package com.example.skeleton.adapter.output.persistence.config
+package com.example.skeleton.infrastructure.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource

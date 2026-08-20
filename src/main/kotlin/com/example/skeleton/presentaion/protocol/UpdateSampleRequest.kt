@@ -1,6 +1,6 @@
-package com.example.skeleton.adapter.input.web.sample.protocol
+package com.example.skeleton.presentaion.protocol
 
-import com.example.skeleton.application.port.input.sample.model.UpdateSampleCommand
+import com.example.skeleton.application.sample.model.UpdateSampleCommand
 import com.example.skeleton.domain.sample.model.SampleStatus
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

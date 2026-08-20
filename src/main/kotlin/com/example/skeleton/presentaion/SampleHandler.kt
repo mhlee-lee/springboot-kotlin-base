@@ -1,20 +1,20 @@
-package com.example.skeleton.adapter.input.web.sample
+package com.example.skeleton.presentaion
 
-import com.example.skeleton.adapter.input.web.sample.protocol.CreateSampleRequest
-import com.example.skeleton.adapter.input.web.sample.protocol.SampleResponse
-import com.example.skeleton.adapter.input.web.sample.protocol.SampleSearchRequest
-import com.example.skeleton.adapter.input.web.sample.protocol.UpdateSampleRequest
-import com.example.skeleton.application.port.input.sample.SampleUseCase
+import com.example.skeleton.application.sample.SampleService
 import com.example.skeleton.common.exception.InvalidPathParameterException
 import com.example.skeleton.common.exception.RequiredRequestBodyException
 import com.example.skeleton.common.extensions.*
 import com.example.skeleton.domain.sample.model.SampleStatus
+import com.example.skeleton.presentaion.protocol.CreateSampleRequest
+import com.example.skeleton.presentaion.protocol.SampleResponse
+import com.example.skeleton.presentaion.protocol.SampleSearchRequest
+import com.example.skeleton.presentaion.protocol.UpdateSampleRequest
 import jakarta.validation.Validator
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 
 @Component
-class SampleHandler(private val sampleUseCase: SampleUseCase, private val validator: Validator) {
+class SampleHandler(private val sampleService: SampleService, private val validator: Validator) {
 
     // ── GET /samples?name=...&minAge=...&maxAge=...&status=ACTIVE ─────────
     // QueryParam → model 바인딩 (bindQueryParams) + validation 예시
@@ -23,8 +23,8 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
         val searchRequest = request.bindQueryParams<SampleSearchRequest>()
         validator.validateOrThrow(searchRequest)
 
-        val result = sampleUseCase.searchSamples(searchRequest.toQuery())
-        return ServerResponse.ok().bodyValueAndAwait(result.map(SampleResponse::from))
+        val result = sampleService.searchSamples(searchRequest.toQuery())
+        return ServerResponse.ok().bodyValueAndAwait(result.map(SampleResponse.Companion::from))
     }
 
     // ── GET /samples/status/{status} ─────────────────────────────────────
@@ -33,8 +33,8 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
     suspend fun searchSamplesByStatus(request: ServerRequest): ServerResponse {
         val status = request.enumPathVariable<SampleStatus>("status")
 
-        val result = sampleUseCase.searchSamplesByStatus(status)
-        return ServerResponse.ok().bodyValueAndAwait(result.map(SampleResponse::from))
+        val result = sampleService.searchSamplesByStatus(status)
+        return ServerResponse.ok().bodyValueAndAwait(result.map(SampleResponse.Companion::from))
     }
 
     // ── GET /samples/{id} ────────────────────────────────────────────────
@@ -43,7 +43,7 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
         val id = request.pathVariable("id").toLongOrNull()
             ?: throw InvalidPathParameterException("id")
 
-        val result = sampleUseCase.getSample(id)
+        val result = sampleService.getSample(id)
         return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
     }
 
@@ -53,7 +53,7 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
     suspend fun createSample(request: ServerRequest): ServerResponse {
         val body = request.awaitBodyValidated<CreateSampleRequest>(validator)
 
-        val result = sampleUseCase.createSample(body.toCommand())
+        val result = sampleService.createSample(body.toCommand())
         return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
     }
 
@@ -69,7 +69,7 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
             ?: throw RequiredRequestBodyException()
 
         val command = body.toCommand(id, modifiedBy)
-        val result = sampleUseCase.updateSample(command)
+        val result = sampleService.updateSample(command)
         return ServerResponse.ok().bodyValueAndAwait(SampleResponse.from(result))
     }
 
@@ -79,7 +79,7 @@ class SampleHandler(private val sampleUseCase: SampleUseCase, private val valida
         val id = request.pathVariable("id").toLongOrNull()
             ?: throw InvalidPathParameterException("id")
 
-        sampleUseCase.deleteSample(id)
+        sampleService.deleteSample(id)
         return ServerResponse.noContent().buildAndAwait()
     }
 }

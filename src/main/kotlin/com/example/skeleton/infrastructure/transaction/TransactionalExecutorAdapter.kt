@@ -1,6 +1,6 @@
-package com.example.skeleton.adapter.output.transaction
+package com.example.skeleton.infrastructure.transaction
 
-import com.example.skeleton.application.port.output.transaction.TransactionalPort
+import com.example.skeleton.domain.transaction.TransactionalPort
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier

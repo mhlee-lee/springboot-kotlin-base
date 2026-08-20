@@ -1,4 +1,4 @@
-package com.example.skeleton.adapter.input.web.sample
+package com.example.skeleton.presentaion
 
 import com.example.skeleton.common.constant.CommonConstant.API_VERSION_V1
 import org.springframework.context.annotation.Bean

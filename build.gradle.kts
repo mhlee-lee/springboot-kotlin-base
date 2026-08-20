@@ -9,7 +9,7 @@ plugins {
     id("org.springframework.boot") version PluginVersions.SPRING_BOOT
     id("io.spring.dependency-management") version PluginVersions.SPRING_DEPENDENCY_MANAGEMENT
     id("org.jooq.jooq-codegen-gradle") version PluginVersions.JOOQ
-//    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
+    id("com.epages.restdocs-api-spec") version PluginVersions.RESTDOCS_API_SPEC
 }
 
 group = "org.test"
@@ -30,7 +30,7 @@ configurations {
 configurations.matching { it.name.startsWith("detekt") }.configureEach {
     resolutionStrategy.eachDependency {
         if (requested.group == "org.jetbrains.kotlin") {
-            useVersion("2.3.0")
+            useVersion("2.4.10")
             because("detekt must run with the Kotlin compiler version it was built against")
         }
     }
@@ -154,10 +154,10 @@ tasks.named("compileKotlin") {
     dependsOn(tasks.named("jooqCodegen"))
 }
 
-//openapi3 {
-//    setServer("http://localhost:8080")
-//    title = "My API"
-//    description = "My API description"
-//    version = "0.1.0"
-//    format = "yaml"
-//}
+openapi3 {
+    setServer("http://localhost:8080")
+    title = "My API"
+    description = "My API description"
+    version = "0.1.0"
+    format = "yaml"
+}

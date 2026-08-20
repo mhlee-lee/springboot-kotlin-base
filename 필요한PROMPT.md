@@ -25,22 +25,5 @@ Enum 처리시 DB 에 저장및 읽기위한 GenericEnum 과 adapter.input 쪽�
 
 모든것은 spring 공식문서, springboot 공식문서, kotlin 공식문서를 기반으로 개발이 진행되어야함.
 
-
----------
-
-companion object {
-private val VALUE_MAP = entries.associateBy { it.value }
-
-        fun from(value: String): SampleStatus = VALUE_MAP[value]
-            ?: throw IllegalArgumentException("Unknown SampleStatus value: $value")
-    }
-
-이런거 GenericEnum 에 넣어서 공통화 가능한지 확인해줘
-
-또 IllegalArgumentException("Unknown SampleStatus value: $value") 이렇게 말고
-해당 프로젝트에서 사용하는 DefaultException 을 사용해서 처리할 수 있게해줘
-구현된 다른 Exception 들 확인하고
-GlobalErrorAttributes 에서 처리하는것 확인하고 수정해줘
-
-
-
+----
+정적분석에 문제가 발생하면 detekt, .editorconfig 를 수정하지말고 코드를 수정해라
