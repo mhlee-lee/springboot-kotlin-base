@@ -9,6 +9,9 @@ complexity:
     allowedConstructorParameters: 7
     ignoreDefaultParameters: true
     ignoreDataClasses: true
+  TooManyFunctions:
+    allowedFunctionsPerClass: 20
+    allowedFunctionsPerInterface: 20
 
 naming:
   FunctionNaming:

@@ -19,10 +19,11 @@ inline fun <reified E> byValue(value: String): E? where E : Enum<E>, E : Generic
 inline fun <reified E> requireByValue(value: String): E where E : Enum<E>, E : GenericEnum = byValue<E>(value)
     ?: throw InvalidEnumValueException(enumClass = E::class, value = value)
 
-inline fun <reified T> KClass<T>.toDocument(): String where T : Enum<T>, T : DisplayEnum = enumValues<T>().filter {
-    it.displayable
-}
+inline fun <reified T> KClass<T>.displayableValues(): List<T> where T : Enum<T>, T : DisplayEnum = enumValues<T>()
+    .filter { it.displayable }
     .sortedBy { it.priority }
-    .joinToString(separator = ",", prefix = "[", postfix = "]") {
-        "${it.name}: ${it.label}"
+
+inline fun <reified T> KClass<T>.toDocument(): String where T : Enum<T>, T : DisplayEnum =
+    this.displayableValues<T>().joinToString(separator = ", ", prefix = "[", postfix = "]") {
+        "${it.name}: ${it.getMessage()}"
     }

@@ -1,4 +1,4 @@
-package com.ktcloud.kcp.cm.common.config.events
+package com.example.skeleton.common.events
 
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory

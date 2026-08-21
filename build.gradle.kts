@@ -60,8 +60,15 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.restdocs:spring-restdocs-webtestclient")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation("com.epages:restdocs-api-spec:${PluginVersions.RESTDOCS_API_SPEC}") {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-web")
+    }
+    testImplementation("com.epages:restdocs-api-spec-webtestclient:${PluginVersions.RESTDOCS_API_SPEC}") {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-web")
+    }
 
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
@@ -155,9 +162,9 @@ tasks.named("compileKotlin") {
 }
 
 openapi3 {
-    setServer("http://localhost:8080")
-    title = "My API"
-    description = "My API description"
-    version = "0.1.0"
+    setServer("http://localhost:18080")
+    title = "Skeleton Sample API"
+    description = "Spring WebFlux 기반 Sample API"
+    version = "1.0.0"
     format = "yaml"
 }
