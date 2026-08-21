@@ -60,6 +60,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     jooqCodegen("org.postgresql:postgresql")
     jooqCodegen("org.testcontainers:testcontainers-postgresql:${DependencyVersions.TESTCONTAINERS}")
+    jooqCodegen(files("src/main/resources"))
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
@@ -94,7 +95,7 @@ jooq {
             name = "org.jooq.codegen.KotlinGenerator"
             database {
                 name = "org.jooq.meta.postgres.PostgresDatabase"
-                inputSchema = "skeleton"
+                inputSchema = "public"
             }
             generate {
                 isDeprecated = false
