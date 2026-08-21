@@ -1,4 +1,4 @@
-package com.example.skeleton
+package com.example.skeleton.presentation
 
 import com.epages.restdocs.apispec.ConstrainedFields
 import com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document
@@ -40,7 +40,7 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @ExtendWith(RestDocumentationExtension::class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class SampleApiDocumentationTests {
+class SampleRouterTests {
     @LocalServerPort
     private var port: Int = 0
 
