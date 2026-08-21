@@ -83,7 +83,7 @@ dependencies {
 }
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
-val postgresqlTestcontainerJdbcUrl = "jdbc:tc:postgresql:17-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql"
+val postgresqlTestcontainerJdbcUrl = "jdbc:tc:postgresql:18-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql"
 
 jooq {
     configuration {

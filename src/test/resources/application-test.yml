@@ -3,7 +3,7 @@ spring:
     write:
       hikari:
         pool-name: write-test-hikari-pool
-        jdbc-url: jdbc:tc:postgresql:17-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql
+        jdbc-url: jdbc:tc:postgresql:18-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql
         username: sa
         password:
         driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
@@ -12,7 +12,7 @@ spring:
     read:
       hikari:
         pool-name: read-test-hikari-pool
-        jdbc-url: jdbc:tc:postgresql:17-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql
+        jdbc-url: jdbc:tc:postgresql:18-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql
         username: sa
         password:
         driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
