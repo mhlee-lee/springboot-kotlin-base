@@ -3,20 +3,33 @@ package com.example.skeleton.presentation
 import com.epages.restdocs.apispec.ConstrainedFields
 import com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document
 import com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.resourceDetails
+import com.example.skeleton.application.sample.SampleService
+import com.example.skeleton.application.sample.model.CreateSampleCommand
+import com.example.skeleton.application.sample.model.SampleSearchQuery
+import com.example.skeleton.application.sample.model.UpdateSampleCommand
 import com.example.skeleton.common.constant.CommonConstant.API_VERSION_V1
 import com.example.skeleton.common.extensions.withDisplayEnum
+import com.example.skeleton.common.utils.MessageConverter
+import com.example.skeleton.domain.sample.model.Sample
 import com.example.skeleton.domain.sample.model.SampleStatus
+import com.example.skeleton.presentaion.SampleHandler
+import com.example.skeleton.presentaion.SampleRouter
 import com.example.skeleton.presentaion.protocol.CreateSampleRequest
 import com.example.skeleton.presentaion.protocol.UpdateSampleRequest
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.ApplicationContext
+import org.springframework.context.MessageSource
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.support.ResourceBundleMessageSource
 import org.springframework.http.MediaType
-import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.restdocs.RestDocumentationContextProvider
 import org.springframework.restdocs.RestDocumentationExtension
 import org.springframework.restdocs.headers.HeaderDocumentation.headerWithName
@@ -29,35 +42,31 @@ import org.springframework.restdocs.payload.PayloadDocumentation.*
 import org.springframework.restdocs.request.RequestDocumentation.*
 import org.springframework.restdocs.snippet.Snippet
 import org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.documentationConfiguration
-import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.reactive.server.EntityExchangeResult
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
+import org.springframework.web.reactive.config.ApiVersionConfigurer
+import org.springframework.web.reactive.config.EnableWebFlux
+import org.springframework.web.reactive.config.WebFluxConfigurer
 import java.util.function.Consumer
-import javax.sql.DataSource
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-@ExtendWith(RestDocumentationExtension::class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@ExtendWith(SpringExtension::class, RestDocumentationExtension::class)
+@ContextConfiguration(classes = [SampleRouterTests.TestConfiguration::class])
 class SampleRouterTests {
-    @LocalServerPort
-    private var port: Int = 0
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
 
     @Autowired
-    @Qualifier("writeDataSource")
-    private lateinit var writeDataSource: DataSource
-
-    @Autowired
-    @Qualifier("readDataSource")
-    private lateinit var readDataSource: DataSource
+    private lateinit var sampleService: SampleService
 
     private lateinit var webTestClient: WebTestClient
-    private lateinit var writeJdbc: JdbcTemplate
-    private lateinit var readJdbc: JdbcTemplate
 
     @BeforeEach
     fun setUp(restDocumentation: RestDocumentationContextProvider) {
+        clearMocks(sampleService)
+
         val restDocsConfigurer = documentationConfiguration(restDocumentation)
         restDocsConfigurer.operationPreprocessors()
             .withRequestDefaults(
@@ -66,20 +75,16 @@ class SampleRouterTests {
             )
             .withResponseDefaults(prettyPrint())
 
-        webTestClient = WebTestClient.bindToServer()
-            .baseUrl("http://127.0.0.1:$port")
+        webTestClient = WebTestClient.bindToApplicationContext(applicationContext)
+            .configureClient()
             .filter(restDocsConfigurer)
             .build()
-        writeJdbc = JdbcTemplate(writeDataSource)
-        readJdbc = JdbcTemplate(readDataSource)
-        writeJdbc.update("DELETE FROM samples")
-        readJdbc.update("DELETE FROM samples")
     }
 
     @Test
     fun `documents searching samples`() {
-        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Alice', 30, 'active')")
-        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (2, 'Bob', 20, 'inactive')")
+        val result = Sample(id = 1, name = "Alice", age = 30, status = SampleStatus.ACTIVE)
+        coEvery { sampleService.searchSamples(any()) } returns listOf(result)
 
         webTestClient.get()
             .uri(
@@ -109,12 +114,23 @@ class SampleRouterTests {
                     responseFields(*sampleResponseFields("[].")),
                 ),
             )
+
+        coVerify(exactly = 1) {
+            sampleService.searchSamples(
+                SampleSearchQuery(
+                    name = "Ali",
+                    minAge = 20,
+                    maxAge = 40,
+                    status = SampleStatus.ACTIVE,
+                ),
+            )
+        }
     }
 
     @Test
     fun `documents searching samples by status`() {
-        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Alice', 30, 'active')")
-        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (2, 'Bob', 20, 'inactive')")
+        val result = Sample(id = 1, name = "Alice", age = 30, status = SampleStatus.ACTIVE)
+        coEvery { sampleService.searchSamplesByStatus(SampleStatus.ACTIVE) } returns listOf(result)
 
         webTestClient.get()
             .uri("/sample/{version}/samples/status/{status}", API_VERSION_V1, "ACTIVE")
@@ -136,11 +152,14 @@ class SampleRouterTests {
                     responseFields(*sampleResponseFields("[].")),
                 ),
             )
+
+        coVerify(exactly = 1) { sampleService.searchSamplesByStatus(SampleStatus.ACTIVE) }
     }
 
     @Test
     fun `documents getting a sample`() {
-        readJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Bob', 25, 'active')")
+        val result = Sample(id = 1, name = "Bob", age = 25, status = SampleStatus.ACTIVE)
+        coEvery { sampleService.getSample(1) } returns result
 
         webTestClient.get()
             .uri("/sample/{version}/samples/{id}", API_VERSION_V1, 1)
@@ -162,25 +181,25 @@ class SampleRouterTests {
                     responseFields(*sampleResponseFields()),
                 ),
             )
+
+        coVerify(exactly = 1) { sampleService.getSample(1) }
     }
 
     @Test
     fun `documents creating a sample`() {
-        val request = CreateSampleRequest(
-            name = "Alice",
-            age = 30,
-            status = SampleStatus.ACTIVE,
-        )
+        val command = CreateSampleCommand(name = "Alice", age = 30, status = SampleStatus.ACTIVE)
+        val result = Sample(id = 1, name = "Alice", age = 30, status = SampleStatus.ACTIVE)
+        coEvery { sampleService.createSample(command) } returns result
 
         webTestClient.post()
             .uri("/sample/{version}/samples", API_VERSION_V1)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
+            .bodyValue(CreateSampleRequest(name = "Alice", age = 30, status = SampleStatus.ACTIVE))
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.id").isNotEmpty
+            .jsonPath("$.id").isEqualTo(1)
             .jsonPath("$.name").isEqualTo("Alice")
             .consumeWith(
                 documentation(
@@ -192,23 +211,28 @@ class SampleRouterTests {
                     responseFields(*sampleResponseFields()),
                 ),
             )
+
+        coVerify(exactly = 1) { sampleService.createSample(command) }
     }
 
     @Test
     fun `documents updating a sample`() {
-        writeJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Before', 20, 'active')")
-        val request = UpdateSampleRequest(
+        val command = UpdateSampleCommand(
+            id = 1,
             name = "After",
             age = 31,
             status = SampleStatus.INACTIVE,
+            modifiedBy = "document-writer",
         )
+        val result = Sample(id = 1, name = "After", age = 31, status = SampleStatus.INACTIVE)
+        coEvery { sampleService.updateSample(command) } returns result
 
         webTestClient.put()
             .uri("/sample/{version}/samples/{id}", API_VERSION_V1, 1)
             .header(MODIFIED_BY_HEADER, "document-writer")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
+            .bodyValue(UpdateSampleRequest(name = "After", age = 31, status = SampleStatus.INACTIVE))
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -231,11 +255,13 @@ class SampleRouterTests {
                     responseFields(*sampleResponseFields()),
                 ),
             )
+
+        coVerify(exactly = 1) { sampleService.updateSample(command) }
     }
 
     @Test
     fun `documents deleting a sample`() {
-        writeJdbc.update("INSERT INTO samples (id, name, age, status) VALUES (1, 'Delete', 20, 'active')")
+        coEvery { sampleService.deleteSample(1) } returns Unit
 
         webTestClient.delete()
             .uri("/sample/{version}/samples/{id}", API_VERSION_V1, 1)
@@ -253,6 +279,8 @@ class SampleRouterTests {
                     ),
                 ),
             )
+
+        coVerify(exactly = 1) { sampleService.deleteSample(1) }
     }
 
     private fun documentation(
@@ -299,6 +327,48 @@ class SampleRouterTests {
         fieldWithPath("${prefix}status")
             .withDisplayEnum<SampleStatus>("상태"),
     )
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableWebFlux
+    class TestConfiguration : WebFluxConfigurer {
+        private val messageSource = ResourceBundleMessageSource().apply {
+            setBasenames(
+                "messages/message",
+                "validations/validation",
+                "enums/enum",
+                "errors/error",
+            )
+            setDefaultEncoding("UTF-8")
+            setFallbackToSystemLocale(false)
+        }
+        private val validator = LocalValidatorFactoryBean().apply {
+            setValidationMessageSource(messageSource)
+            afterPropertiesSet()
+        }
+
+        @Bean
+        fun messageSource(): MessageSource = messageSource
+
+        @Bean
+        fun messageConverter(): MessageConverter = MessageConverter(messageSource)
+
+        @Bean
+        fun sampleService(): SampleService = mockk()
+
+        @Bean
+        fun sampleHandler(sampleService: SampleService): SampleHandler = SampleHandler(sampleService, validator)
+
+        @Bean
+        fun sampleRoutes(sampleHandler: SampleHandler) = SampleRouter(sampleHandler).sampleRoutes()
+
+        override fun getValidator(): org.springframework.validation.Validator = validator
+
+        override fun configureApiVersioning(configurer: ApiVersionConfigurer) {
+            configurer
+                .usePathSegment(1)
+                .setVersionRequired(true)
+        }
+    }
 
     companion object {
         private const val DOCUMENTATION_PORT = 18080
