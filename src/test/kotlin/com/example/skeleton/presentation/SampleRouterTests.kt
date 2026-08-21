@@ -7,6 +7,8 @@ import com.example.skeleton.application.sample.SampleService
 import com.example.skeleton.application.sample.model.CreateSampleCommand
 import com.example.skeleton.application.sample.model.SampleSearchQuery
 import com.example.skeleton.application.sample.model.UpdateSampleCommand
+import com.example.skeleton.common.config.TraceIdWebFilter
+import com.example.skeleton.common.config.TraceLoggingConfiguration
 import com.example.skeleton.common.constant.CommonConstant.API_VERSION_V1
 import com.example.skeleton.common.extensions.withDisplayEnum
 import com.example.skeleton.common.utils.MessageConverter
@@ -20,9 +22,12 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
@@ -51,6 +56,7 @@ import org.springframework.web.reactive.config.ApiVersionConfigurer
 import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import java.util.function.Consumer
+import kotlin.test.assertEquals
 
 @ExtendWith(SpringExtension::class, RestDocumentationExtension::class)
 @ContextConfiguration(classes = [SampleRouterTests.TestConfiguration::class])
@@ -158,11 +164,27 @@ class SampleRouterTests {
 
     @Test
     fun `documents getting a sample`() {
+        val traceId = "router-mdc-trace-id"
         val result = Sample(id = 1, name = "Bob", age = 25, status = SampleStatus.ACTIVE)
-        coEvery { sampleService.getSample(1) } returns result
+        coEvery { sampleService.getSample(1) } coAnswers {
+            assertEquals(
+                traceId,
+                MDC.get(TraceIdWebFilter.MDC_TRACE_ID_KEY),
+                "Service 진입 시점의 MDC traceId",
+            )
+            withContext(Dispatchers.IO) {
+                assertEquals(
+                    traceId,
+                    MDC.get(TraceIdWebFilter.MDC_TRACE_ID_KEY),
+                    "Dispatcher 전환 후 MDC traceId",
+                )
+            }
+            result
+        }
 
         webTestClient.get()
             .uri("/sample/{version}/samples/{id}", API_VERSION_V1, 1)
+            .header(TraceIdWebFilter.TRACE_ID_HEADER, traceId)
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -351,6 +373,12 @@ class SampleRouterTests {
 
         @Bean
         fun messageConverter(): MessageConverter = MessageConverter(messageSource)
+
+        @Bean
+        fun traceIdWebFilter(): TraceIdWebFilter = TraceIdWebFilter()
+
+        @Bean
+        fun traceLoggingConfiguration(): TraceLoggingConfiguration = TraceLoggingConfiguration()
 
         @Bean
         fun sampleService(): SampleService = mockk()

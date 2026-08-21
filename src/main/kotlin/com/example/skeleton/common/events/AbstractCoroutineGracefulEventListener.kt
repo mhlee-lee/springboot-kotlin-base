@@ -1,6 +1,7 @@
 package com.example.skeleton.common.events
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.slf4j.MDCContext
 import org.slf4j.LoggerFactory
 import org.springframework.context.SmartLifecycle
 import java.lang.Runnable
@@ -31,7 +32,7 @@ abstract class AbstractCoroutineGracefulEventListener(
             return
         }
 
-        scope.launch(context) {
+        scope.launch(context + MDCContext()) {
             try {
                 process()
             } catch (e: CancellationException) {

@@ -1,8 +1,32 @@
 package com.example.skeleton.common.extensions
 
+import com.example.skeleton.common.config.TraceIdWebFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.slf4j.MDCContext
+import kotlinx.coroutines.withContext
+import org.springframework.web.reactive.function.server.CoRouterFunctionDsl
+import org.springframework.web.reactive.function.server.RouterFunction
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.coRouter
+
+fun coRouterWithMdc(routes: CoRouterFunctionDsl.() -> Unit): RouterFunction<ServerResponse> = coRouter {
+    routes()
+    filter { request, next ->
+        val traceId = request.exchange().getAttribute<String>(TraceIdWebFilter.TRACE_ID_ATTRIBUTE)
+
+        if (traceId == null) {
+            next(request)
+        } else {
+            withContext(
+                MDCContext(mapOf(TraceIdWebFilter.MDC_TRACE_ID_KEY to traceId)),
+            ) {
+                next(request)
+            }
+        }
+    }
+}
 
 suspend fun <T1 : Any, T2 : Any> asyncAndAwait(
     block1: suspend CoroutineScope.() -> T1,
