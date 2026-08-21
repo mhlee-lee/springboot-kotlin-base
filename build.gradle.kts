@@ -53,9 +53,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("tools.jackson.module:jackson-module-kotlin")
 
-    runtimeOnly("com.h2database:h2")
-    jooqCodegen("com.h2database:h2")
-    jooqCodegen("org.jooq:jooq-meta-extensions")
+    implementation(
+        "net.logstash.logback:logstash-logback-encoder:${DependencyVersions.LOGSTASH_LOGBACK_ENCODER}",
+    )
+
+    runtimeOnly("org.postgresql:postgresql")
+    jooqCodegen("org.postgresql:postgresql")
+    jooqCodegen("org.testcontainers:testcontainers-postgresql:${DependencyVersions.TESTCONTAINERS}")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
@@ -72,32 +76,25 @@ dependencies {
 
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("io.mockk:mockk:${DependencyVersions.MOCKK}")
+    testRuntimeOnly("org.testcontainers:testcontainers-postgresql:${DependencyVersions.TESTCONTAINERS}")
 
     detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper:${PluginVersions.DETEKT}")
 }
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
+val postgresqlTestcontainerJdbcUrl = "jdbc:tc:postgresql:17-alpine:///skeletondb?TC_INITSCRIPT=db/schema.sql"
 
 jooq {
     configuration {
+        jdbc {
+            driver = "org.testcontainers.jdbc.ContainerDatabaseDriver"
+            url = postgresqlTestcontainerJdbcUrl
+        }
         generator {
             name = "org.jooq.codegen.KotlinGenerator"
             database {
-                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
-                properties {
-                    property {
-                        key = "scripts"
-                        value = "src/main/resources/db/schema.sql"
-                    }
-                    property {
-                        key = "defaultNameCase"
-                        value = "lower"
-                    }
-                    property {
-                        key = "unqualifiedSchema"
-                        value = "none"
-                    }
-                }
+                name = "org.jooq.meta.postgres.PostgresDatabase"
+                inputSchema = "skeleton"
             }
             generate {
                 isDeprecated = false
