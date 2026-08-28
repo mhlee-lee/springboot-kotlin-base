@@ -1,0 +1,45 @@
+name: Sparrow SAST
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on:
+      group: enterprise/sparrow
+      labels: sparrow-runner-set
+    env:
+      BRANCH_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Print branch info
+        run: |
+          echo "Event : ${{ github.event_name }}, Checkout ref: $BRANCH_REF, github.ref : ${{ github.ref }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.BRANCH_REF }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21.0.7'
+          distribution: 'temurin'
+
+      - name: Run Sparrow SAST
+        uses: ./.github/actions/sparrow-sast
+        with:
+          SPARROW_URL: ${{ vars.SPARROW_URL }}
+          SPARROW_USERNAME: ${{ secrets.SPARROW_USERNAME }}
+          SPARROW_PASSWORD: ${{ secrets.SPARROW_PASSWORD }}
+          SPARROW_PROJECT_KEY: ${{ vars.SPARROW_PROJECT_KEY }}
+          SPARROW_CLIENT_PATH: "/home/runner/sparrow-client"
+          IS_FORCE_EXIT: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}

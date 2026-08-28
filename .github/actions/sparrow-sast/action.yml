@@ -1,0 +1,69 @@
+name: 'Sparrow SAST'
+description: 'RUN Sparrow'
+
+inputs:
+  SPARROW_USERNAME:
+    description: "this parameter is Sparrow SAST ID for Run Sparrow SAST"
+    required: true
+  SPARROW_PASSWORD:
+    description: "this parameter is Sparrow SAST Password for Run Sparrow SAST"
+    required: true
+  SPARROW_PROJECT_KEY:
+    description: "this parameter is Sparrow SAST Project for Run Sparrow SAST"
+    required: true
+  SPARROW_URL:
+    description: "this parameter is Sparrow SAST URL for Run Sparrow SAST"
+    required: true
+  SPARROW_CLIENT_PATH:
+    description: "this parameter is Sparrow SAST Client Path for Run Sparrow SAST Client"
+    required: true
+
+  IS_FORCE_EXIT:
+    description: "this parameter is Force Exit for Analyze Sparrow SAST Result (NOTE: Do Not Use At Main Branch)"
+    required: false
+    default: "true"
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Sparrow SAST
+      run: |
+        sudo ${{ inputs.SPARROW_CLIENT_PATH }}/setup.sh
+      shell: bash
+
+    - name: Run Sparrow SAST
+      run: |
+        sudo echo ${{ inputs.SPARROW_PASSWORD }} >> ${{ runner.temp }}/password.txt
+        sudo ${{ inputs.SPARROW_CLIENT_PATH }}/sparrow-client.sh -S ${{ inputs.SPARROW_URL }} -U ${{ inputs.SPARROW_USERNAME }} -PW ${{ runner.temp }}/password.txt -P ${{ inputs.SPARROW_PROJECT_KEY }} -SD ./src/main -L "all" | tee ${{ runner.temp }}/result.txt
+      shell: bash
+
+    # 아래 total count sum 하는 부분 수정해야함 지금 0 으로만 출력됨.
+    - name: Analyze Sparrow SAST Result
+      run: |
+        LOG_FILE="$RUNNER_TEMP/result.txt"
+
+        total_sum=0
+        while read -r line; do
+          if [[ "$line" =~ ^[[:space:]]*[1-5][[:space:]]+[A-Z_]+[[:space:]]+([0-9]+) ]]; then
+            risk_level="${BASH_REMATCH[1]}"
+            number="${BASH_REMATCH[2]}"
+            if [[ "$risk_level" -ne 5 ]]; then
+              total_sum=$((total_sum + number))
+            fi
+          fi
+        done < "$LOG_FILE"
+
+        echo "Total Risk Sum: $total_sum"
+
+        if [[ "$total_sum" -eq 0 ]]; then
+          echo -e "\e[32m >>> INFO: No risk detected (Total Risk Sum: $total_sum). Proceeding...\e[0m"
+        elif [[ "$total_sum" -ge 1 && "$IS_FORCE_EXIT" == "false" ]]; then
+          echo -e "::WARNING ::Some risk detected (Total Risk Sum: $total_sum), but proceeding..."
+        else
+          echo -e "::ERROR ::Sparrow SAST risk detected (Total Risk Sum: $total_sum)! Exiting with error..."
+          exit 1
+        fi
+      shell: bash
+      env:
+        RUNNER_TEMP: ${{ runner.temp }}
+        IS_FORCE_EXIT: ${{ inputs.IS_FORCE_EXIT }}

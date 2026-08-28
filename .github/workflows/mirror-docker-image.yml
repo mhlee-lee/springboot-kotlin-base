@@ -1,0 +1,112 @@
+name: Mirror Docker Image to Harbor
+
+run-name: Mirror ${{ inputs.image }} to ${{ inputs.harbor_repository_path }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Docker Hub 이미지명과 태그 (예: redis:8.10.0-alpine)"
+        required: true
+        type: string
+
+      harbor_repository_path:
+        description: "Harbor repository 경로 (예: kt-cloud-service/kcp-network)"
+        required: true
+        default: "kt-cloud-service/kcp-network"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  mirror-image:
+    runs-on:
+      group: enterprise/Default
+      labels: cicd-ys-ext-build-worker
+
+    env:
+      HARBOR_REGISTRY: harbor-cicd.ktcloud.com
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Harbor
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Resolve image names
+        id: image
+        shell: bash
+        env:
+          INPUT_IMAGE: ${{ inputs.image }}
+          INPUT_HARBOR_REPOSITORY_PATH: ${{ inputs.harbor_repository_path }}
+        run: |
+          set -euo pipefail
+
+          IMAGE="$(echo "${INPUT_IMAGE}" | xargs)"
+          HARBOR_REPOSITORY_PATH="$(echo "${INPUT_HARBOR_REPOSITORY_PATH}" | xargs)"
+
+          # 앞뒤 slash 제거
+          HARBOR_REPOSITORY_PATH="${HARBOR_REPOSITORY_PATH#/}"
+          HARBOR_REPOSITORY_PATH="${HARBOR_REPOSITORY_PATH%/}"
+
+          if [[ -z "${IMAGE}" ]]; then
+            echo "::error::image는 필수입니다."
+            exit 1
+          fi
+
+          if [[ -z "${HARBOR_REPOSITORY_PATH}" ]]; then
+            echo "::error::harbor_repository_path는 필수입니다."
+            exit 1
+          fi
+
+          # redis:8.10.0-alpine 형식 검증
+          if [[ ! "${IMAGE}" =~ ^[a-z0-9]+([._-][a-z0-9]+)*:[A-Za-z0-9_][A-Za-z0-9._-]*$ ]]; then
+            echo "::error::잘못된 image 형식입니다: ${IMAGE}"
+            echo "::error::예시: redis:8.10.0-alpine"
+            exit 1
+          fi
+
+          # kt-cloud-service/kcp-network 형식 검증
+          if [[ ! "${HARBOR_REPOSITORY_PATH}" =~ ^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*$ ]]; then
+            echo "::error::잘못된 Harbor repository path입니다: ${HARBOR_REPOSITORY_PATH}"
+            echo "::error::예시: kt-cloud-service/kcp-network"
+            exit 1
+          fi
+
+          SOURCE_IMAGE="docker.io/library/${IMAGE}"
+          TARGET_IMAGE="${HARBOR_REGISTRY}/${HARBOR_REPOSITORY_PATH}/${IMAGE}"
+
+          {
+            echo "source=${SOURCE_IMAGE}"
+            echo "target=${TARGET_IMAGE}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "Source image: ${SOURCE_IMAGE}"
+          echo "Target image: ${TARGET_IMAGE}"
+
+      - name: Copy image to Harbor
+        shell: bash
+        env:
+          SOURCE_IMAGE: ${{ steps.image.outputs.source }}
+          TARGET_IMAGE: ${{ steps.image.outputs.target }}
+        run: |
+          set -euo pipefail
+
+          docker buildx imagetools create \
+            --tag "${TARGET_IMAGE}" \
+            "${SOURCE_IMAGE}"
+
+      - name: Verify Harbor image
+        shell: bash
+        env:
+          TARGET_IMAGE: ${{ steps.image.outputs.target }}
+        run: |
+          set -euo pipefail
+
+          docker buildx imagetools inspect "${TARGET_IMAGE}"
